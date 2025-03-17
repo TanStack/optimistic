@@ -29,14 +29,14 @@ jobs:
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Run Tests
-        run: pnpm run test:ci
+        run: pnpm run lint && pnpm run test && pnpm run build
       - name: Run Changesets (version or publish)
         uses: changesets/action@v1.4.9
         with:
           version: pnpm run changeset:version
           publish: pnpm run changeset:publish
-          commit: 'ci: Version Packages'
-          title: 'ci: Version Packages'
+          commit: "ci: Version Packages"
+          title: "ci: Version Packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
