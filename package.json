@@ -2,6 +2,7 @@
   "name": "@tanstack/optimistic",
   "version": "0.0.8",
   "description": "Optimistic UI library for sync engines",
+  "packageManager": "pnpm@10.6.3",
   "type": "module",
   "exports": {
     "./react-electric": {
