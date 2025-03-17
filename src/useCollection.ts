@@ -395,10 +395,10 @@ export function shallow<T>(objA: T, objB: T) {
     return false
   }
 
-  for (const i of keysA) {
+  for (const key of keysA) {
     if (
-      !Object.prototype.hasOwnProperty.call(objB, keysA[i]) ||
-      !Object.is(objA[keysA[i] as keyof T], objB[keysA[i] as keyof T])
+      !Object.prototype.hasOwnProperty.call(objB, key) ||
+      !Object.is(objA[key as keyof T], objB[key as keyof T])
     ) {
       return false
     }

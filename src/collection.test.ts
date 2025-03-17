@@ -14,7 +14,6 @@ describe(`Collection`, () => {
   it(`should throw if there's no mutationFn`, () => {
     expect(
       () =>
-        // @ts-expect-error Property 'mutationFn' is missing but required in type 'CollectionConfig'
         new Collection({
           sync: { id: `test`, sync: async () => {} },
         })

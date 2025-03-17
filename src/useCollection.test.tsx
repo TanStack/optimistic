@@ -11,20 +11,19 @@ describe(`useCollection`, () => {
 
     // Setup initial hook render
     const { result } = renderHook(() =>
-      useCollection({
+      useCollection<{ name: string }>({
         id: `test-collection`,
         sync: {
-          id: `mock`,
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (type, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
-                write({
-                  key: mutation.key,
-                  type: mutation.type as string,
-                  value: mutation.changes,
-                })
-              )
+                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+                  write({
+                    key: mutation.key,
+                    type: mutation.type as 'insert' | 'update' | 'delete',
+                    value: mutation.changes as Record<string, unknown>,
+                  })
+                )
               commit()
             })
           },
@@ -33,6 +32,7 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve
           },
         },
       })
@@ -123,7 +123,7 @@ describe(`useCollection`, () => {
     act(() => {
       const items = [
         result.current.state.get(`user2`)!,
-        result.current.state.get(charlieKey)!,
+        result.current.state.get(charlieKey ?? '')!,
       ]
       result.current.delete(items, { metadata: { reason: `bulk cleanup` } })
     })
@@ -148,19 +148,20 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve()
           },
         },
         sync: {
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (type, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
-                write({
-                  key: mutation.key,
-                  type: mutation.type as string,
-                  value: mutation.changes,
-                })
-              )
+                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+                  write({
+                    key: mutation.key,
+                    type: mutation.type as 'insert' | 'update' | 'delete',
+                    value: mutation.changes as Record<string, unknown>,
+                  })
+                )
               commit()
             })
           },
@@ -216,19 +217,21 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve()
           },
         },
         sync: {
           sync: ({ begin, write, commit }) => {
+            console.log({ begin, write, commit })
             emitter.on(`*`, (type, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
-                write({
-                  key: mutation.key,
-                  type: mutation.type as string,
-                  value: mutation.changes,
-                })
-              )
+                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+                  write({
+                    key: mutation.key,
+                    type: mutation.type as 'insert' | 'update' | 'delete',
+                    value: mutation.changes as Record<string, unknown>,
+                  })
+                )
               commit()
             })
           },
@@ -260,7 +263,7 @@ describe(`useCollection`, () => {
     })
 
     // Verify selector result
-    expect(result.current.data.map((item) => item.name)).toEqual([
+    expect(result.current.data.map((item) => (item as { name: string }).name)).toEqual([
       `Alice`,
       `Bob`,
       `Charlie`,
