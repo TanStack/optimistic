@@ -15,15 +15,22 @@ describe(`useCollection`, () => {
         id: `test-collection`,
         sync: {
           sync: ({ begin, write, commit }) => {
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+              ;(
+                mutations as Array<{
+                  key: string
+                  type: string
+                  changes: unknown
+                }>
+              ).forEach(
+                (mutation: { key: string; type: string; changes: unknown }) =>
                   write({
                     key: mutation.key,
-                    type: mutation.type as 'insert' | 'update' | 'delete',
-                    value: mutation.changes as Record<string, unknown>,
+                    type: mutation.type as `insert` | `update` | `delete`,
+                    value: mutation.changes as { name: string },
                   })
-                )
+              )
               commit()
             })
           },
@@ -65,7 +72,7 @@ describe(`useCollection`, () => {
     // Verify bulk insert
     expect(result.current.state.size).toBe(3)
     expect(result.current.state.get(`user2`)).toEqual({ name: `Bob` })
-    expect(result.current.state.get(charlieKey)).toEqual({ name: `Charlie` })
+    expect(result.current.state.get(charlieKey!)).toEqual({ name: `Charlie` })
     expect(result.current.data.length).toBe(3)
     expect(result.current.data).toContainEqual({ name: `Bob` })
     expect(result.current.data).toContainEqual({ name: `Charlie` })
@@ -96,8 +103,11 @@ describe(`useCollection`, () => {
         items,
         { metadata: { bulkUpdate: true } },
         (draft) => {
-          draft[0].name = draft[0].name + ` Jr.`
-          draft[1].name = draft[1].name + ` Sr.`
+          // Use array methods which are type-safe
+          draft.forEach((item, index) => {
+            if (index === 0) item.name = item.name + ` Jr.`
+            if (index === 1) item.name = item.name + ` Sr.`
+          })
         }
       )
     })
@@ -123,7 +133,7 @@ describe(`useCollection`, () => {
     act(() => {
       const items = [
         result.current.state.get(`user2`)!,
-        result.current.state.get(charlieKey ?? '')!,
+        result.current.state.get(charlieKey ?? ``)!,
       ]
       result.current.delete(items, { metadata: { reason: `bulk cleanup` } })
     })
@@ -155,13 +165,20 @@ describe(`useCollection`, () => {
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (type, mutations) => {
               begin()
-                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+              ;(
+                mutations as Array<{
+                  key: string
+                  type: string
+                  changes: unknown
+                }>
+              ).forEach(
+                (mutation: { key: string; type: string; changes: unknown }) =>
                   write({
                     key: mutation.key,
-                    type: mutation.type as 'insert' | 'update' | 'delete',
+                    type: mutation.type as `insert` | `update` | `delete`,
                     value: mutation.changes as Record<string, unknown>,
                   })
-                )
+              )
               commit()
             })
           },
@@ -225,13 +242,20 @@ describe(`useCollection`, () => {
             console.log({ begin, write, commit })
             emitter.on(`*`, (type, mutations) => {
               begin()
-                ; (mutations as Array<{ key: string; type: string; changes: unknown }>).forEach((mutation: { key: string; type: string; changes: unknown }) =>
+              ;(
+                mutations as Array<{
+                  key: string
+                  type: string
+                  changes: unknown
+                }>
+              ).forEach(
+                (mutation: { key: string; type: string; changes: unknown }) =>
                   write({
                     key: mutation.key,
-                    type: mutation.type as 'insert' | 'update' | 'delete',
+                    type: mutation.type as `insert` | `update` | `delete`,
                     value: mutation.changes as Record<string, unknown>,
                   })
-                )
+              )
               commit()
             })
           },
@@ -263,11 +287,9 @@ describe(`useCollection`, () => {
     })
 
     // Verify selector result
-    expect(result.current.data.map((item) => (item as { name: string }).name)).toEqual([
-      `Alice`,
-      `Bob`,
-      `Charlie`,
-    ])
+    expect(
+      result.current.data.map((item) => (item as { name: string }).name)
+    ).toEqual([`Alice`, `Bob`, `Charlie`])
 
     // Verify state and data are still available
     expect(result.current.state.size).toBe(3)
