@@ -210,9 +210,9 @@ describe(`Collection`, () => {
       collection.state.get(keys[2])!,
       collection.state.get(keys[3])!,
     ]
-    collection.update(items, { metadata: { bulkUpdate: true } }, (draft) => {
-      draft.forEach((item) => {
-        item.value += `-updated`
+    collection.update(items, { metadata: { bulkUpdate: true } }, (drafts) => {
+      drafts.forEach((draft) => {
+        draft.value += `-updated`
       })
     })
 

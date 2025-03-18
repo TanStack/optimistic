@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import mitt from "mitt"
 import { useCollection } from "./useCollection"
+import type { OperationType, PendingMutation } from "./types"
 import "fake-indexeddb/auto"
 
 describe(`useCollection`, () => {
@@ -17,20 +18,13 @@ describe(`useCollection`, () => {
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (_, mutations) => {
               begin()
-              ;(
-                mutations as Array<{
-                  key: string
-                  type: string
-                  changes: unknown
-                }>
-              ).forEach(
-                (mutation: { key: string; type: string; changes: unknown }) =>
-                  write({
-                    key: mutation.key,
-                    type: mutation.type as `insert` | `update` | `delete`,
-                    value: mutation.changes as { name: string },
-                  })
-              )
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
+                write({
+                  key: mutation.key,
+                  type: mutation.type,
+                  value: mutation.changes as { name: string },
+                })
+              })
               commit()
             })
           },
@@ -39,7 +33,7 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
-            return Promise.resolve
+            return Promise.resolve()
           },
         },
       })
@@ -102,11 +96,13 @@ describe(`useCollection`, () => {
       return result.current.update(
         items,
         { metadata: { bulkUpdate: true } },
-        (draft) => {
-          // Use array methods which are type-safe
-          draft.forEach((item, index) => {
-            if (index === 0) item.name = item.name + ` Jr.`
-            if (index === 1) item.name = item.name + ` Sr.`
+        (drafts) => {
+          drafts.forEach((draft, i) => {
+            if (i === 0) {
+              draft.name = draft.name + ` Jr.`
+            } else if (i === 1) {
+              draft.name = draft.name + ` Sr.`
+            }
           })
         }
       )
@@ -133,7 +129,7 @@ describe(`useCollection`, () => {
     act(() => {
       const items = [
         result.current.state.get(`user2`)!,
-        result.current.state.get(charlieKey ?? ``)!,
+        result.current.state.get(charlieKey!)!,
       ]
       result.current.delete(items, { metadata: { reason: `bulk cleanup` } })
     })
@@ -163,22 +159,15 @@ describe(`useCollection`, () => {
         },
         sync: {
           sync: ({ begin, write, commit }) => {
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-              ;(
-                mutations as Array<{
-                  key: string
-                  type: string
-                  changes: unknown
-                }>
-              ).forEach(
-                (mutation: { key: string; type: string; changes: unknown }) =>
-                  write({
-                    key: mutation.key,
-                    type: mutation.type as `insert` | `update` | `delete`,
-                    value: mutation.changes as Record<string, unknown>,
-                  })
-              )
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
+                write({
+                  key: mutation.key,
+                  type: mutation.type,
+                  value: mutation.changes,
+                })
+              })
               commit()
             })
           },
@@ -228,7 +217,7 @@ describe(`useCollection`, () => {
 
     // Setup hook with selector
     const { result } = renderHook(() =>
-      useCollection({
+      useCollection<{ id: number; name: string }>({
         id: `test-selector`,
         mutationFn: {
           persist: persistMock,
@@ -239,23 +228,16 @@ describe(`useCollection`, () => {
         },
         sync: {
           sync: ({ begin, write, commit }) => {
-            console.log({ begin, write, commit })
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-              ;(
-                mutations as Array<{
-                  key: string
-                  type: string
-                  changes: unknown
-                }>
-              ).forEach(
-                (mutation: { key: string; type: string; changes: unknown }) =>
-                  write({
-                    key: mutation.key,
-                    type: mutation.type as `insert` | `update` | `delete`,
-                    value: mutation.changes as Record<string, unknown>,
-                  })
-              )
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
+                write({
+                  key: mutation.key,
+                  type: mutation.type,
+                  // TODO this should get the type automatically
+                  value: mutation.changes as { id: number; name: string },
+                })
+              })
               commit()
             })
           },

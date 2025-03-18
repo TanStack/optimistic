@@ -58,7 +58,7 @@ type Value<TExtensions = never> =
 
 export type Row<TExtensions = never> = Record<string, Value<TExtensions>>
 
-type OperationType = `insert` | `update` | `delete`
+export type OperationType = `insert` | `update` | `delete`
 
 export interface SyncConfig<T extends object = Record<string, unknown>> {
   sync: (params: {
