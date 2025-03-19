@@ -97,7 +97,7 @@ function deepClone<T extends unknown>(
 
     // Copy the values
     for (let i = 0; i < (obj as unknown as TypedArray).length; i++) {
-      clone[i] = (obj as unknown as TypedArray)[i]
+      clone[i] = (obj as unknown as TypedArray)[i]!
     }
 
     return clone as unknown as T
@@ -761,11 +761,15 @@ export function createChangeProxy<T extends object>(
 
           // Delete the property from the copy
           if (changeTracker.copy_) {
-            delete changeTracker.copy_[prop as keyof T]
+            // Use type assertion to tell TypeScript this is allowed
+            delete (changeTracker.copy_ as Record<string | symbol, unknown>)[
+              prop
+            ]
           }
 
           // Delete the property from the original object
-          delete dobj[prop as keyof TObj]
+          // Use type assertion to tell TypeScript this is allowed
+          delete (dobj as Record<string | symbol, unknown>)[prop]
 
           // If the property didn't exist in the original object, removing it
           // should revert to the original state

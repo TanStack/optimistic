@@ -1,6 +1,6 @@
 import { openDB } from "idb"
 import type { DBSchema, IDBPDatabase } from "idb"
-import type { Transaction } from "./types"
+import type { Transaction, TransactionWithoutToObject } from "./types"
 
 /**
  * Interface defining the database schema for transaction storage
@@ -8,7 +8,7 @@ import type { Transaction } from "./types"
 interface SyncDB extends DBSchema {
   transactions: {
     key: string
-    value: Transaction
+    value: TransactionWithoutToObject
   }
 }
 
@@ -44,7 +44,7 @@ export class TransactionStore {
    *
    * @returns Promise resolving to an array of all transactions
    */
-  async getTransactions(): Promise<Array<Transaction>> {
+  async getTransactions(): Promise<Array<TransactionWithoutToObject>> {
     const db = await this.getDB()
     return db.getAll(`transactions`)
   }

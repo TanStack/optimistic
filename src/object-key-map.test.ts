@@ -13,10 +13,9 @@ describe(`Object-Key Association`, () => {
     })
 
     collection = new Collection<{ name: string; age: number }>({
-      name: `test-collection`,
+      id: `test-sync`,
       schema,
       sync: {
-        id: `test-sync`,
         sync: async () => {},
       },
       mutationFn: {
@@ -60,8 +59,10 @@ describe(`Object-Key Association`, () => {
 
     // Update multiple objects using their references
     collection.update([john!, jane!], (items) => {
-      items[0].age = 31
-      items[1].name = `Jane Doe`
+      if (items[0] && items[1]) {
+        items[0].age = 31
+        items[1].name = `Jane Doe`
+      }
     })
 
     // Verify updates

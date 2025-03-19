@@ -14,8 +14,8 @@ describe(`TransactionManager`, () => {
     // Reset indexedDB for each test using the fake-indexeddb implementation
     store = new TransactionStore()
     collection = new Collection({
+      id: `foo`,
       sync: {
-        id: `mock`,
         sync: () => {},
       },
       mutationFn: {
@@ -38,7 +38,7 @@ describe(`TransactionManager`, () => {
     metadata: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    state: `created`,
+    syncMetadata: {},
   })
 
   const orderedStrategy: MutationStrategy = {
@@ -192,7 +192,9 @@ describe(`TransactionManager`, () => {
             ...tx.toObject(),
             createdAt: new Date(timestamp),
           }
+
           manager.transactions.setState((sortedMap) => {
+            // @ts-expect-error this is fine for a test
             sortedMap.set(updatedTx.id, updatedTx)
             return sortedMap
           })
@@ -202,9 +204,9 @@ describe(`TransactionManager`, () => {
 
       // Verify transactions are returned in chronological order (oldest first)
       const sortedTransactions = Array.from(manager.transactions.state.values())
-      expect(sortedTransactions[0].createdAt.getTime()).toBe(timestamps[2]) // Oldest
-      expect(sortedTransactions[1].createdAt.getTime()).toBe(timestamps[1])
-      expect(sortedTransactions[2].createdAt.getTime()).toBe(timestamps[0]) // Newest
+      expect(sortedTransactions[0]?.createdAt.getTime()).toBe(timestamps[2]) // Oldest
+      expect(sortedTransactions[1]?.createdAt.getTime()).toBe(timestamps[1])
+      expect(sortedTransactions[2]?.createdAt.getTime()).toBe(timestamps[0]) // Newest
     })
 
     it(`should create a new transaction when no existing transactions with overlapping keys exist`, () => {
@@ -230,7 +232,7 @@ describe(`TransactionManager`, () => {
 
       // Create second transaction with a mutation - this should be queued behind the first.
       const tx1 = manager.applyTransaction([originalMutation], orderedStrategy)
-      expect(tx1.mutations[0].modified.value).toBe(`original-value`)
+      expect(tx1.mutations[0]?.modified.value).toBe(`original-value`)
 
       // Apply a new transaction with a mutation for the same key but different value.
       const newMutation = {
@@ -246,8 +248,8 @@ describe(`TransactionManager`, () => {
 
       // Should have updated the mutation
       expect(tx2.mutations.length).toBe(1)
-      expect(tx2.mutations[0].modified.value).toBe(`updated-value`)
-      expect(tx2.mutations[0].changes.value).toBe(`updated-value`)
+      expect(tx2.mutations[0]?.modified.value).toBe(`updated-value`)
+      expect(tx2.mutations[0]?.changes.value).toBe(`updated-value`)
     })
 
     it(`should add new mutations while preserving existing ones for different keys`, () => {
@@ -262,7 +264,7 @@ describe(`TransactionManager`, () => {
       // Should create a new transaction since keys don't overlap
       expect(tx2.id).not.toBe(tx1.id)
       expect(tx2.mutations.length).toBe(1)
-      expect(tx2.mutations[0].key).toBe(`test-apply-3b`)
+      expect(tx2.mutations[0]?.key).toBe(`test-apply-3b`)
     })
 
     it(`should handle multiple transactions with overlapping keys`, () => {
@@ -350,17 +352,17 @@ describe(`TransactionManager`, () => {
       expect(tx3.id).not.toBe(tx1.id)
       expect(tx3.id).not.toBe(tx2.id)
       expect(tx3.mutations.length).toBe(1)
-      expect(tx3.mutations[0].key).toBe(`key-3`)
+      expect(tx3.mutations[0]?.key).toBe(`key-3`)
 
       // Original transactions should be unchanged
       const updatedTx1 = manager.getTransaction(tx1.id)
       const updatedTx2 = manager.getTransaction(tx2.id)
 
       expect(updatedTx1?.mutations.length).toBe(1)
-      expect(updatedTx1?.mutations[0].key).toBe(`key-1`)
+      expect(updatedTx1?.mutations[0]?.key).toBe(`key-1`)
 
       expect(updatedTx2?.mutations.length).toBe(1)
-      expect(updatedTx2?.mutations[0].key).toBe(`key-2`)
+      expect(updatedTx2?.mutations[0]?.key).toBe(`key-2`)
     })
 
     it(`should only consider active transactions for applying updates`, () => {
@@ -381,7 +383,7 @@ describe(`TransactionManager`, () => {
       // Should create a new transaction since the existing one is completed
       expect(tx2.id).not.toBe(tx1.id)
       expect(tx2.mutations.length).toBe(1)
-      expect(tx2.mutations[0].modified.value).toBe(`new-value`)
+      expect(tx2.mutations[0]?.modified.value).toBe(`new-value`)
     })
   })
 
@@ -596,7 +598,7 @@ describe(`TransactionManager`, () => {
       // Verify transaction exists in IndexedDB
       let transactions = await store.getTransactions()
       expect(transactions.length).toBe(1)
-      expect(transactions[0].id).toBe(tx.id)
+      expect(transactions[0]?.id).toBe(tx.id)
 
       // Update to 'completed' state (terminal)
       manager.setTransactionState(tx.id, `completed`)
@@ -614,7 +616,7 @@ describe(`TransactionManager`, () => {
       // Verify transaction exists in IndexedDB
       transactions = await store.getTransactions()
       expect(transactions.length).toBe(1)
-      expect(transactions[0].id).toBe(tx2.id)
+      expect(transactions[0]?.id).toBe(tx2.id)
 
       // Update to 'failed' state (terminal)
       manager.setTransactionState(tx2.id, `failed`)

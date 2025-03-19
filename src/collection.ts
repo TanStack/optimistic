@@ -552,7 +552,7 @@ export class Collection<T extends object = Record<string, unknown>> {
     items.forEach((item, index) => {
       // Validate the data against the schema if one exists
       const validatedData = this.validateData(item, `insert`)
-      const key = keys[index]
+      const key = keys[index]!
 
       const mutation: PendingMutation = {
         mutationId: crypto.randomUUID(),
@@ -612,6 +612,9 @@ export class Collection<T extends object = Record<string, unknown>> {
     configOrCallback: ((draft: TItem | Array<TItem>) => void) | OperationConfig,
     maybeCallback?: (draft: TItem | Array<TItem>) => void
   ) {
+    if (typeof items === `undefined`) {
+      throw new Error(`The first argument to update is missing`)
+    }
     const isArray = Array.isArray(items)
     const itemsArray = Array.isArray(items) ? items : [items]
     const callback =
@@ -644,7 +647,7 @@ export class Collection<T extends object = Record<string, unknown>> {
       )
     } else {
       const result = withChangeTracking(
-        currentObjects[0],
+        currentObjects[0] as TItem,
         callback as (draft: TItem) => void
       )
       changesArray = [result]

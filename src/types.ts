@@ -43,8 +43,10 @@ export interface Transaction {
    * Get a plain object representation of the transaction
    * This is useful for creating clones or serializing the transaction
    */
-  toObject?: () => Omit<Transaction, `toObject`>
+  toObject: () => Omit<Transaction, `toObject`>
 }
+
+export type TransactionWithoutToObject = Omit<Transaction, `toObject`>
 
 type Value<TExtensions = never> =
   | string
@@ -58,7 +60,7 @@ type Value<TExtensions = never> =
 
 export type Row<TExtensions = never> = Record<string, Value<TExtensions>>
 
-type OperationType = `insert` | `update` | `delete`
+export type OperationType = `insert` | `update` | `delete`
 
 export interface SyncConfig<T extends object = Record<string, unknown>> {
   sync: (params: {

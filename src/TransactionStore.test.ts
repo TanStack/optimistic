@@ -33,7 +33,7 @@ describe(`TransactionStore`, () => {
 
     const transactions = await store.getTransactions()
     expect(transactions).toHaveLength(1)
-    expect(transactions[0].id).toBe(`test-1`)
+    expect(transactions[0]?.id).toBe(`test-1`)
   })
 
   it(`should update an existing transaction`, async () => {
@@ -46,7 +46,7 @@ describe(`TransactionStore`, () => {
 
     const transactions = await store.getTransactions()
     expect(transactions).toHaveLength(1)
-    expect(transactions[0].state).toBe(`completed`)
+    expect(transactions[0]?.state).toBe(`completed`)
   })
 
   it(`should delete a transaction`, async () => {

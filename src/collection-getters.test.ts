@@ -9,7 +9,7 @@ describe(`Collection getters`, () => {
     sync: (params: {
       collection: Collection
       begin: () => void
-      write: (message: ChangeMessage<unknown>) => void
+      write: (message: ChangeMessage) => void
       commit: () => void
     }) => void
   }

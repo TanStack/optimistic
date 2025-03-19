@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import mitt from "mitt"
 import { useCollection } from "./useCollection"
+import type { PendingMutation } from "./types"
 import "fake-indexeddb/auto"
 
 describe(`useCollection`, () => {
@@ -11,20 +12,19 @@ describe(`useCollection`, () => {
 
     // Setup initial hook render
     const { result } = renderHook(() =>
-      useCollection({
+      useCollection<{ name: string }>({
         id: `test-collection`,
         sync: {
-          id: `mock`,
           sync: ({ begin, write, commit }) => {
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
                 write({
                   key: mutation.key,
-                  type: mutation.type as string,
-                  value: mutation.changes,
+                  type: mutation.type,
+                  value: mutation.changes as { name: string },
                 })
-              )
+              })
               commit()
             })
           },
@@ -33,6 +33,7 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve()
           },
         },
       })
@@ -65,7 +66,7 @@ describe(`useCollection`, () => {
     // Verify bulk insert
     expect(result.current.state.size).toBe(3)
     expect(result.current.state.get(`user2`)).toEqual({ name: `Bob` })
-    expect(result.current.state.get(charlieKey)).toEqual({ name: `Charlie` })
+    expect(result.current.state.get(charlieKey!)).toEqual({ name: `Charlie` })
     expect(result.current.data.length).toBe(3)
     expect(result.current.data).toContainEqual({ name: `Bob` })
     expect(result.current.data).toContainEqual({ name: `Charlie` })
@@ -95,9 +96,14 @@ describe(`useCollection`, () => {
       return result.current.update(
         items,
         { metadata: { bulkUpdate: true } },
-        (draft) => {
-          draft[0].name = draft[0].name + ` Jr.`
-          draft[1].name = draft[1].name + ` Sr.`
+        (drafts) => {
+          drafts.forEach((draft, i) => {
+            if (i === 0) {
+              draft.name = draft.name + ` Jr.`
+            } else if (i === 1) {
+              draft.name = draft.name + ` Sr.`
+            }
+          })
         }
       )
     })
@@ -123,7 +129,7 @@ describe(`useCollection`, () => {
     act(() => {
       const items = [
         result.current.state.get(`user2`)!,
-        result.current.state.get(charlieKey)!,
+        result.current.state.get(charlieKey!)!,
       ]
       result.current.delete(items, { metadata: { reason: `bulk cleanup` } })
     })
@@ -148,19 +154,20 @@ describe(`useCollection`, () => {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve()
           },
         },
         sync: {
           sync: ({ begin, write, commit }) => {
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
                 write({
                   key: mutation.key,
-                  type: mutation.type as string,
+                  type: mutation.type,
                   value: mutation.changes,
                 })
-              )
+              })
               commit()
             })
           },
@@ -210,25 +217,27 @@ describe(`useCollection`, () => {
 
     // Setup hook with selector
     const { result } = renderHook(() =>
-      useCollection({
+      useCollection<{ id: number; name: string }>({
         id: `test-selector`,
         mutationFn: {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
             emitter.emit(`update`, transaction.mutations)
+            return Promise.resolve()
           },
         },
         sync: {
           sync: ({ begin, write, commit }) => {
-            emitter.on(`*`, (type, mutations) => {
+            emitter.on(`*`, (_, mutations) => {
               begin()
-              mutations.forEach((mutation) =>
+              ;(mutations as Array<PendingMutation>).forEach((mutation) => {
                 write({
                   key: mutation.key,
-                  type: mutation.type as string,
-                  value: mutation.changes,
+                  type: mutation.type,
+                  // TODO this should get the type automatically
+                  value: mutation.changes as { id: number; name: string },
                 })
-              )
+              })
               commit()
             })
           },
@@ -260,11 +269,9 @@ describe(`useCollection`, () => {
     })
 
     // Verify selector result
-    expect(result.current.data.map((item) => item.name)).toEqual([
-      `Alice`,
-      `Bob`,
-      `Charlie`,
-    ])
+    expect(
+      result.current.data.map((item) => (item as { name: string }).name)
+    ).toEqual([`Alice`, `Bob`, `Charlie`])
 
     // Verify state and data are still available
     expect(result.current.state.size).toBe(3)
