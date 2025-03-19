@@ -101,7 +101,11 @@ describe(`Proxy Library`, () => {
     })
 
     it(`should track when properties are deleted from objects`, () => {
-      const obj = { name: `John`, age: 30, role: `admin` }
+      const obj: { name: string; age: number; role?: string } = {
+        name: `John`,
+        age: 30,
+        role: `admin`,
+      }
       const { proxy, getChanges } = createChangeProxy(obj)
 
       delete proxy.role
@@ -129,15 +133,19 @@ describe(`Proxy Library`, () => {
 
     it(`should properly handle objects with circular references`, () => {
       const obj: unknown = { name: `John`, age: 30 }
+      // @ts-expect-error ignore for test
       obj.self = obj // Create circular reference
 
+      // @ts-expect-error ignore for test
       const { proxy, getChanges } = createChangeProxy(obj)
 
+      // @ts-expect-error ignore for test
       proxy.name = `Jane`
 
       expect(getChanges()).toEqual({
         name: `Jane`,
       })
+      // @ts-expect-error ignore for test
       expect(obj.name).toBe(`Jane`)
     })
 
@@ -316,11 +324,13 @@ describe(`Proxy Library`, () => {
       })
 
       const { proxy, getChanges } = createChangeProxy(obj)
+      // @ts-expect-error ignore for test
       proxy.hidden = `modified`
 
       expect(getChanges()).toEqual({
         hidden: `modified`,
       })
+      // @ts-expect-error ignore for test
       expect(obj.hidden).toBe(`modified`)
     })
 
@@ -329,15 +339,21 @@ describe(`Proxy Library`, () => {
       const { proxy } = createChangeProxy(obj)
 
       // Attempt to modify Object.prototype through the proxy
+      // @ts-expect-error ignore for test
       proxy.__proto__ = { malicious: true }
+      // @ts-expect-error ignore for test
       proxy.constructor.prototype.malicious = true
 
       // Verify that Object.prototype wasn't polluted
+      // @ts-expect-error ignore for test
       expect({}.malicious).toBeUndefined()
+      // @ts-expect-error ignore for test
       expect(Object.prototype.malicious).toBeUndefined()
 
       // The changes should only affect the proxy's own prototype chain
+      // @ts-expect-error ignore for test
       expect(proxy.__proto__.malicious).toBe(true)
+      // @ts-expect-error ignore for test
       expect(proxy.constructor.prototype.malicious).toBe(true)
     })
   })
@@ -391,6 +407,7 @@ describe(`Proxy Library`, () => {
       let errorThrown = false
       let errorMessage = ``
       try {
+        // @ts-expect-error ignore for test
         proxy.role = `admin`
       } catch (e) {
         // Expected error
@@ -432,6 +449,7 @@ describe(`Proxy Library`, () => {
       let errorThrown = false
       let errorMessage = ``
       try {
+        // @ts-expect-error ignore for test
         proxy.role = `admin`
       } catch (e) {
         // Expected error
@@ -479,7 +497,7 @@ describe(`Proxy Library`, () => {
       }
 
       // Verify the original map was modified
-      expect(map.get(`key1`).count).toBe(10)
+      expect(map.get(`key1`)?.count).toBe(10)
 
       // Force a change to ensure the proxy tracks it
       proxy.myMap.set(`key3`, { count: 3 })
@@ -540,7 +558,7 @@ describe(`Proxy Library`, () => {
       })
 
       // Verify the original map was modified
-      expect(map.get(`key2`).count).toBe(20)
+      expect(map.get(`key2`)?.count).toBe(20)
 
       // Force a change to ensure the proxy tracks it
       proxy.myMap.set(`key3`, { count: 3 })
@@ -676,7 +694,9 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Make changes to the proxies
+      // @ts-expect-error ok possibly undefined
       proxies[0].name = `Johnny`
+      // @ts-expect-error ok possibly undefined
       proxies[1].name = `Janet`
 
       // Check that the changes are tracked
@@ -708,6 +728,7 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Create a new array without the last element
+      // @ts-expect-error ok possibly undefined
       proxies[0].items = proxies[0].items.slice(0, -1)
 
       expect(getChanges()).toEqual([
@@ -715,6 +736,7 @@ describe(`Proxy Library`, () => {
           items: [`apple`, `banana`],
         },
       ])
+      // @ts-expect-error ok possibly undefined
       expect(objs[0].items).toEqual([`apple`, `banana`])
     })
 
@@ -723,6 +745,8 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Create a new array without the first element
+
+      // @ts-expect-error ok possibly undefined
       proxies[0].items = proxies[0].items.slice(1)
 
       expect(getChanges()).toEqual([
@@ -730,6 +754,7 @@ describe(`Proxy Library`, () => {
           items: [`banana`, `cherry`],
         },
       ])
+      // @ts-expect-error ok possibly undefined
       expect(objs[0].items).toEqual([`banana`, `cherry`])
     })
 
@@ -738,6 +763,8 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Create a new array with an element added at the beginning
+      // @ts-expect-error ok possibly undefined
+
       proxies[0].items = [`apple`, ...proxies[0].items]
 
       expect(getChanges()).toEqual([
@@ -745,6 +772,8 @@ describe(`Proxy Library`, () => {
           items: [`apple`, `banana`, `cherry`],
         },
       ])
+      // @ts-expect-error ok possibly undefined
+
       expect(objs[0].items).toEqual([`apple`, `banana`, `cherry`])
     })
 
@@ -753,8 +782,12 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Create a new array with elements replaced in the middle
+      // @ts-expect-error ok possibly undefined
+
       const newItems = [...proxies[0].items]
       newItems.splice(1, 2, `blueberry`, `cranberry`)
+      // @ts-expect-error ok possibly undefined
+
       proxies[0].items = newItems
 
       expect(getChanges()).toEqual([
@@ -762,6 +795,7 @@ describe(`Proxy Library`, () => {
           items: [`apple`, `blueberry`, `cranberry`, `date`],
         },
       ])
+      // @ts-expect-error ok possibly undefined
       expect(objs[0].items).toEqual([`apple`, `blueberry`, `cranberry`, `date`])
     })
 
@@ -770,6 +804,7 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Create a new sorted array
+      // @ts-expect-error ok possibly undefined
       proxies[0].items = [...proxies[0].items].sort()
 
       expect(getChanges()).toEqual([
@@ -777,6 +812,7 @@ describe(`Proxy Library`, () => {
           items: [`apple`, `banana`, `cherry`],
         },
       ])
+      // @ts-expect-error ok possibly undefined
       expect(objs[0].items).toEqual([`apple`, `banana`, `cherry`])
     })
 
@@ -792,8 +828,10 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Update a nested array
+      // @ts-expect-error ok possibly undefined
       const newMatrix = [...proxies[0].matrix]
       newMatrix[0] = [5, 6]
+      // @ts-expect-error ok possibly undefined
       proxies[0].matrix = newMatrix
 
       expect(getChanges()).toEqual([
@@ -804,10 +842,12 @@ describe(`Proxy Library`, () => {
           ],
         },
       ])
-      expect(objs[0].matrix).toEqual([
-        [5, 6],
-        [3, 4],
-      ])
+      if (objs[0]) {
+        expect(objs[0].matrix).toEqual([
+          [5, 6],
+          [3, 4],
+        ])
+      }
     })
 
     it(`should handle objects containing arrays as properties`, () => {
@@ -822,8 +862,10 @@ describe(`Proxy Library`, () => {
       const { proxies, getChanges } = createArrayChangeProxy(objs)
 
       // Update the array within the nested object
+      // @ts-expect-error ok for test.
       const updatedUser = { ...proxies[0].user }
       updatedUser.hobbies = [...updatedUser.hobbies, `cycling`]
+      // @ts-expect-error ok for test.
       proxies[0].user = updatedUser
 
       expect(getChanges()).toEqual([
@@ -834,7 +876,9 @@ describe(`Proxy Library`, () => {
           },
         },
       ])
-      expect(objs[0].user.hobbies).toEqual([`reading`, `swimming`, `cycling`])
+      if (objs[0]) {
+        expect(objs[0].user.hobbies).toEqual([`reading`, `swimming`, `cycling`])
+      }
     })
 
     it(`should handle Set and Map objects`, () => {
@@ -858,9 +902,11 @@ describe(`Proxy Library`, () => {
       const newSet = new Set([...set, 4])
       const newMap = new Map([...map, [`key3`, `value3`]])
 
-      proxies[0].collections = {
-        set: newSet,
-        map: newMap,
+      if (proxies[0]) {
+        proxies[0].collections = {
+          set: newSet,
+          map: newMap,
+        }
       }
 
       expect(getChanges()).toEqual([
@@ -871,8 +917,10 @@ describe(`Proxy Library`, () => {
           },
         },
       ])
-      expect(objs[0].collections.set).toEqual(newSet)
-      expect(objs[0].collections.map).toEqual(newMap)
+      if (objs[0]) {
+        expect(objs[0].collections.set).toEqual(newSet)
+        expect(objs[0].collections.map).toEqual(newMap)
+      }
     })
   })
 
@@ -907,8 +955,10 @@ describe(`Proxy Library`, () => {
       ]
 
       const changes = withArrayChangeTracking(objs, (proxies) => {
-        proxies[0].name = `Johnny`
-        proxies[1].name = `Janet`
+        if (proxies[0] && proxies[1]) {
+          proxies[0].name = `Johnny`
+          proxies[1].name = `Janet`
+        }
       })
 
       // Check that the changes are tracked
@@ -1155,7 +1205,7 @@ describe(`Proxy Library`, () => {
 
   describe(`Object.defineProperty and Meta Operations`, () => {
     it(`should track changes made through Object.defineProperty`, () => {
-      const obj = { name: `John` }
+      const obj: { name: string; age?: number } = { name: `John` }
       const { proxy, getChanges } = createChangeProxy(obj)
 
       Object.defineProperty(proxy, `age`, {
@@ -1172,9 +1222,10 @@ describe(`Proxy Library`, () => {
     })
 
     it(`should handle Object.setPrototypeOf`, () => {
-      const obj = { name: `John` }
-      const proto = {
-        greet() {
+      type foo = { name?: string; greet?: any }
+      const obj: foo = { name: `John` }
+      const proto: foo = {
+        greet(): string {
           return `Hello, ${this.name}!`
         },
       }
@@ -1193,15 +1244,21 @@ describe(`Proxy Library`, () => {
       const { proxy } = createChangeProxy(obj)
 
       // Attempt to modify Object.prototype through the proxy
+      // @ts-expect-error ignore for test
       proxy.__proto__ = { malicious: true }
+      // @ts-expect-error ignore for test
       proxy.constructor.prototype.malicious = true
 
       // Verify that Object.prototype wasn't polluted
+      // @ts-expect-error ignore for test
       expect({}.malicious).toBeUndefined()
+      // @ts-expect-error ignore for test
       expect(Object.prototype.malicious).toBeUndefined()
 
       // The changes should only affect the proxy's own prototype chain
+      // @ts-expect-error ignore for test
       expect(proxy.__proto__.malicious).toBe(true)
+      // @ts-expect-error ignore for test
       expect(proxy.constructor.prototype.malicious).toBe(true)
     })
   })

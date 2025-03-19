@@ -4,7 +4,6 @@ import mitt from "mitt"
 import { z } from "zod"
 import { Collection, SchemaValidationError } from "./collection"
 import type { ChangeMessage, PendingMutation } from "./types"
-import type { Row } from "@electric-sql/client"
 
 describe(`Collection`, () => {
   it(`should throw if there's no sync config`, () => {
@@ -14,15 +13,17 @@ describe(`Collection`, () => {
   it(`should throw if there's no mutationFn`, () => {
     expect(
       () =>
+        // @ts-expect-error mutationFn is supposed to be missing.
         new Collection({
-          sync: { id: `test`, sync: async () => {} },
+          id: `foo`,
+          sync: { sync: async () => {} },
         })
     ).toThrow(`Collection requires a mutationFn`)
   })
 
   it(`It shouldn't expose any state until the initial sync is finished`, () => {
     // Create a collection with a mock sync plugin
-    new Collection<{ value: string }>({
+    new Collection<{ name: string }>({
       id: `foo`,
       sync: {
         sync: ({ collection, begin, write, commit }) => {
@@ -33,7 +34,7 @@ describe(`Collection`, () => {
           begin()
 
           // Write some test data
-          const operations: Array<ChangeMessage> = [
+          const operations: Array<ChangeMessage<{ name: string }>> = [
             { key: `user1`, value: { name: `Alice` }, type: `insert` },
             { key: `user2`, value: { name: `Bob` }, type: `insert` },
           ]
@@ -69,8 +70,8 @@ describe(`Collection`, () => {
 
     // new collection w/ mock sync/mutation
     const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `mock`,
       sync: {
-        id: `mock`,
         sync: ({ begin, write, commit }) => {
           // @ts-expect-error don't trust mitt's typing
           emitter.on(`*`, (_, changes: Array<PendingMutation>) => {
@@ -79,7 +80,8 @@ describe(`Collection`, () => {
               write({
                 key: change.key,
                 type: change.type,
-                value: change.changes as Row,
+                // @ts-expect-error TODO type changes
+                value: change.changes,
               })
             })
             commit()
@@ -120,6 +122,7 @@ describe(`Collection`, () => {
     // Test insert with auto-generated key
     const data = { value: `bar` }
     const transaction = collection.insert(data)
+    // @ts-expect-error possibly undefined is ok in test
     const insertedKey = transaction.mutations[0].key
 
     // The merged value should immediately contain the new insert
@@ -127,6 +130,7 @@ describe(`Collection`, () => {
 
     // check there's a transaction in peristing state
     expect(
+      // @ts-expect-error possibly undefined is ok in test
       Array.from(collection.transactions.values())[0].mutations[0].changes
     ).toEqual({
       value: `bar`,
@@ -141,6 +145,7 @@ describe(`Collection`, () => {
     expect(collection.optimisticOperations.state[0]).toEqual(insertOperation)
 
     // Check persist data (moved outside the persist callback)
+    // @ts-expect-error possibly undefined is ok in test
     const persistData = persistMock.mock.calls[0][0]
     // Check that the transaction is in the right state during persist
     expect(persistData.transaction.state).toBe(`persisting`)
@@ -154,6 +159,7 @@ describe(`Collection`, () => {
     await transaction.isSynced?.promise
 
     // Check sync data (moved outside the awaitSync callback)
+    // @ts-expect-error possibly undefined is ok in test
     const syncData = syncMock.mock.calls[0][0]
     // Check that the transaction is in the right state during sync waiting
     expect(syncData.transaction.state).toBe(`completed`)
@@ -165,6 +171,7 @@ describe(`Collection`, () => {
     // after mutationFn returns, check that the transaction is updated &
     // optimistic update is gone & synced data & comibned state are all updated.
     expect(
+      // @ts-expect-error possibly undefined is ok in test
       Array.from(collection.transactions.values())[0].state
     ).toMatchInlineSnapshot(`"completed"`)
     expect(collection.optimisticOperations.state).toEqual([])
@@ -178,11 +185,14 @@ describe(`Collection`, () => {
     const bulkData = [{ value: `item1` }, { value: `item2` }]
     collection.insert(bulkData)
     const keys = Array.from(collection.state.keys())
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[2])).toEqual(bulkData[0])
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[3])).toEqual(bulkData[1])
 
     // Test update with callback
     collection.update([collection.state.get(insertedKey)!], (item) => {
+      // @ts-expect-error possibly undefined is ok in test
       item[0].value = `bar2`
     })
 
@@ -207,7 +217,9 @@ describe(`Collection`, () => {
 
     // Test bulk update
     const items = [
+      // @ts-expect-error possibly undefined is ok in test
       collection.state.get(keys[2])!,
+      // @ts-expect-error possibly undefined is ok in test
       collection.state.get(keys[3])!,
     ]
     collection.update(items, { metadata: { bulkUpdate: true } }, (drafts) => {
@@ -217,7 +229,9 @@ describe(`Collection`, () => {
     })
 
     // Check bulk updates
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[2])).toEqual({ value: `item1-updated` })
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[3])).toEqual({ value: `item2-updated` })
 
     const toBeDeleted = collection.state.get(insertedKey)!
@@ -234,10 +248,14 @@ describe(`Collection`, () => {
 
     // Test bulk delete
     collection.delete([
+      // @ts-expect-error possibly undefined is ok in test
       collection.state.get(keys[2])!,
+      // @ts-expect-error possibly undefined is ok in test
       collection.state.get(keys[3])!,
     ])
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.has(keys[2])).toBe(false)
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.has(keys[3])).toBe(false)
   })
 
@@ -246,8 +264,8 @@ describe(`Collection`, () => {
 
     // new collection w/ mock sync/mutation
     const collection = new Collection<{ value: string }>({
+      id: `mock`,
       sync: {
-        id: `mock`,
         sync: ({ begin, write, commit }) => {
           // @ts-expect-error don't trust Mitt's typing and this works.
           emitter.on(`*`, (_, changes: Array<PendingMutation>) => {
@@ -256,7 +274,8 @@ describe(`Collection`, () => {
               write({
                 key: change.key,
                 type: change.type,
-                value: change.changes as Row,
+                // @ts-expect-error TODO type changes
+                value: change.changes,
               })
             })
             commit()
@@ -295,6 +314,7 @@ describe(`Collection`, () => {
 
     // check there's a transaction in peristing state
     expect(
+      // @ts-expect-error possibly undefined is ok in test
       Array.from(collection.transactions.values())[0].mutations[0].changes
     ).toEqual({
       value: `bar`,
@@ -329,8 +349,8 @@ describe(`Collection`, () => {
 
   it(`should handle sparse key arrays for bulk inserts`, () => {
     const collection = new Collection<{ value: string }>({
+      id: `test`,
       sync: {
-        id: `test`,
         sync: ({ begin, commit }) => {
           begin()
           commit()
@@ -366,9 +386,13 @@ describe(`Collection`, () => {
     expect(keys[3]).toHaveLength(6)
 
     // Verify all items were inserted with correct values
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[0])).toEqual({ value: `item1` })
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[1])).toEqual({ value: `item2` })
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[2])).toEqual({ value: `item3` })
+    // @ts-expect-error possibly undefined is ok in test
     expect(collection.state.get(keys[3])).toEqual({ value: `item4` })
 
     // Test error case: more keys than items
@@ -391,8 +415,8 @@ describe(`Collection with schema validation`, () => {
 
     // Create a collection with the schema
     const collection = new Collection<z.infer<typeof userSchema>>({
+      id: `test`,
       sync: {
-        id: `test`,
         sync: ({ begin, commit }) => {
           begin()
           commit()

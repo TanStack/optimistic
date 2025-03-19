@@ -47,6 +47,7 @@ describe(`Electric Integration`, () => {
 
     // Create collection with Electric sync
     collection = new Collection({
+      id: `test`,
       sync: electricSync,
       mutationFn: {
         persist: vi.fn().mockResolvedValue(undefined),
@@ -159,7 +160,7 @@ describe(`Electric Integration`, () => {
     subscriber([
       {
         key: `1`,
-        value: null,
+        value: {},
         headers: { operation: `delete` },
       },
       {
@@ -271,7 +272,7 @@ describe(`Electric Integration`, () => {
           },
           {
             headers: {
-              control: `info`,
+              control: `up-to-date`,
               txids: [laterTxid],
             },
           },
@@ -291,7 +292,7 @@ describe(`Electric Integration`, () => {
     it(`should simulate the complete flow from persist to awaitSync`, async () => {
       // Create a fake backend store to simulate server-side storage
       const fakeBackend = {
-        data: new Map<string, unknown>(),
+        data: new Map<string, { txid: number; value: unknown }>(),
         // Simulates persisting data to a backend and returning a txid
         persist: (mutations: Array<PendingMutation>): Promise<number> => {
           const txid = Date.now()
@@ -311,11 +312,11 @@ describe(`Electric Integration`, () => {
           // Create messages for each item in the store that has this txid
           const messages: Array<Message<Row>> = []
 
-          fakeBackend.data.forEach((data, key) => {
-            if (data.txid === txid) {
+          fakeBackend.data.forEach((value, key) => {
+            if (value.txid === txid) {
               messages.push({
                 key,
-                value: data.value,
+                value: value.value as Row,
                 headers: {
                   operation: `insert`,
                   txids: [txid],
@@ -344,7 +345,7 @@ describe(`Electric Integration`, () => {
             const txid = await fakeBackend.persist(transaction.mutations)
 
             // Return the txid (which will be passed to awaitSync)
-            return { txid }
+            return Promise.resolve({ txid })
           }
         ),
 
@@ -368,13 +369,14 @@ describe(`Electric Integration`, () => {
             // Wait for the txid to be seen
             await awaitPromise
 
-            return true
+            return Promise.resolve()
           }
         ),
       }
 
       // Create a new collection with our test mutation function
       const testCollection = new Collection({
+        id: `ofo`,
         sync: electricSync,
         mutationFn: testMutationFn,
       })
@@ -420,7 +422,9 @@ describe(`Electric Integration`, () => {
     ])
 
     // Get the metadata for the inserted item
-    const metadata = collection.syncedMetadata.state.get(`1`)
+    const metadata = collection.syncedMetadata.state.get(`1`) as {
+      primaryKey: string
+    }
 
     // Verify that the primaryKey is included in the metadata
     expect(metadata).toHaveProperty(`primaryKey`)
@@ -430,7 +434,8 @@ describe(`Electric Integration`, () => {
   it(`Transaction proxy with toObject method works correctly`, () => {
     // Create a collection with a simple mutation function
     const testCollection = new Collection({
-      sync: createElectricSync({}, { primaryKey: [`id`] }), // Add primary key
+      id: `foo`,
+      sync: createElectricSync({ url: `foo` }, { primaryKey: [`id`] }), // Add primary key
       mutationFn: {
         persist: async () => {},
         awaitSync: async () => {},
