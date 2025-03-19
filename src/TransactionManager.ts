@@ -65,7 +65,7 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
     this.store.getTransactions().then((transactions) => {
       transactions.forEach((tx) => {
         this.transactions.setState((sortedMap) => {
-          sortedMap.set(tx.id, tx)
+          sortedMap.set(tx.id, tx as Transaction)
           return sortedMap
         })
       })
@@ -79,7 +79,9 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
    * @returns The transaction if found, undefined otherwise
    */
   getTransaction(id: string): Transaction | undefined {
-    return this.transactions.state.get(id)
+    const transaction = this.transactions.state.get(id)
+
+    return transaction
   }
 
   private setTransaction(transaction: Transaction): void {
@@ -187,7 +189,7 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
         strategy,
         isSynced: createDeferred(),
         isPersisted: createDeferred(),
-      }
+      } as Transaction
     }
 
     // For ordered transactions, check if we need to queue behind another transaction

@@ -43,8 +43,10 @@ export interface Transaction {
    * Get a plain object representation of the transaction
    * This is useful for creating clones or serializing the transaction
    */
-  toObject?: () => Omit<Transaction, `toObject`>
+  toObject: () => Omit<Transaction, `toObject`>
 }
+
+export type TransactionWithoutToObject = Omit<Transaction, `toObject`>
 
 type Value<TExtensions = never> =
   | string

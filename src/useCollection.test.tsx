@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import mitt from "mitt"
 import { useCollection } from "./useCollection"
-import type { OperationType, PendingMutation } from "./types"
+import type { PendingMutation } from "./types"
 import "fake-indexeddb/auto"
 
 describe(`useCollection`, () => {
