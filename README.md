@@ -1,36 +1,40 @@
-# @tanstack/optimistic
+# @TanStack/optimistic
 
-A library for creating fast optimistic updates with flexible backend support that pairs seamlessly with sync engines like ElectricSQL.
+A library for creating fast optimistic updates with flexible backend support that pairs seamlessly with sync engines (like [ElectricSQL](https://electric-sql.com/)).
+
+This library is still under design! Please let us know what you think.
+
+Checkout the [example todo app](todo-app/).
 
 ## Installation
 
 ```bash
-npm i @tanstack/optimistic
+npm i @TanStack/optimistic
 ```
 
 ## Overview
 
-`@tanstack/optimistic` provides a robust solution for managing data synchronization between your frontend application and backend services. It offers:
+`@TanStack/optimistic` provides a robust solution for managing data synchronization between your frontend application and backend services. It offers:
 
 - **Optimistic Updates**: Apply changes instantly in the UI while syncing in the background
 - **Flexible Backend Support**: Works with any backend or sync engine
 - **Immutable Snapshots**: Create immutable snapshots of updates that can be persisted and rolled back
-- **React Integration**: Seamless integration with React applications
+- **Framework Integration**: Seamless integration with frontend frameworks
 
 ## Core Concepts
 
 ### Collections
 
-Collections are the central concept in `@tanstack/optimistic`. A collection represents a set of data that can be synchronized, queried, and modified. Each collection:
+Collections are the central concept in `@TanStack/optimistic`. A collection represents a set of data that can be synchronized, queried, and modified. Each collection:
 
 - Has a unique identifier
-- Contains data items accessible via keys
+- Contains data items
 - Provides CRUD operations (insert, update, delete)
 - Manages its own sync and persistence logic
 
 ### Transactions
 
-All mutations in `@tanstack/optimistic` are handled through transactions. Transactions:
+All mutations in `@TanStack/optimistic` are handled through transactions. Transactions:
 
 - Group related changes together
 - Track the state of mutations (pending, persisting, completed, failed)
@@ -64,7 +68,7 @@ const { data, insert, update, delete: deleteFn } = useCollection({
 
 Returns:
 - `data`: An array of all items in the collection
-- `state`: A Map containing all items in the collection with their keys
+- `state`: A Map containing all items in the collection with their internal keys
 - `insert`: Function to add new items to the collection
 - `update`: Function to modify existing items
 - `delete`: Function to remove items from the collection
@@ -140,7 +144,7 @@ delete(todo, { metadata: { reason: "completed" } });
 
 ### Schema Validation
 
-Collections can optionally include a schema for data validation:
+Collections can optionally include a [standard schema](https://github.com/standard-schema/standard-schema) for data validation:
 
 ```typescript
 const todoCollection = useCollection({
@@ -169,8 +173,8 @@ Transactions progress through several states:
 The `mutationFn` property is where you define how your application interacts with your backend. Here's a comprehensive example of integrating with ElectricSQL:
 
 ```typescript
-import { useCollection } from "@tanstack/optimistic/useCollection"
-import { createElectricSync } from '@tanstack/optimistic/electric';
+import { useCollection } from "@TanStack/optimistic/useCollection"
+import { createElectricSync } from '@TanStack/optimistic/electric';
 
 // Create a collection configuration for todos
 const todosConfig = {
