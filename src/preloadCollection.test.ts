@@ -15,7 +15,6 @@ describe(`preloadCollection`, () => {
     const config: { id: string } & CollectionConfig = {
       id: `test-collection`,
       sync: {
-        id: `test-collection-sync`,
         sync: ({ begin, write, commit }) => {
           // Store the commit function to call it later
           commitFn = commit
@@ -67,7 +66,6 @@ describe(`preloadCollection`, () => {
     const config: { id: string } & CollectionConfig = {
       id: `test-collection-2`,
       sync: {
-        id: `test-collection-sync-2`,
         sync: ({ begin, write, commit }) => {
           begin()
           write({
@@ -106,7 +104,6 @@ describe(`preloadCollection`, () => {
     const config: { id: string } & CollectionConfig = {
       id: `test-collection-3`,
       sync: {
-        id: `test-collection-sync-3`,
         sync: ({ begin, write, commit }) => {
           beginCalled++
           commitFn = commit
