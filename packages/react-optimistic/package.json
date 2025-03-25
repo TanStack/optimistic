@@ -1,0 +1,25 @@
+{
+  "name": "@tanstack/react-optimistic",
+  "version": "0.0.0",
+  "description": "React hooks for optimistic updates",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "npx vitest --run"
+  },
+  "dependencies": {
+    "@tanstack/optimistic": "workspace:*",
+    "use-sync-external-store": "^1.2.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.12",
+    "@types/use-sync-external-store": "^0.0.6",
+    "react": "^19.0.0"
+  }
+}
