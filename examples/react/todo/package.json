@@ -1,19 +1,6 @@
 {
   "name": "todo-app",
-  "private": true,
   "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "docker-compose up -d && concurrently \"pnpm api:dev\" \"vite\"",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "tsx scripts/migrate.ts",
-    "db:studio": "drizzle-kit studio",
-    "db:ensure-config": "tsx scripts/ensure-default-config.ts",
-    "api:dev": "tsx watch src/api/server.ts"
-  },
   "dependencies": {
     "@tanstack/optimistic": "workspace:*",
     "@tanstack/react-optimistic": "workspace:*",
@@ -50,5 +37,18 @@
     "tsx": "^4.6.2",
     "typescript": "^5.8.2",
     "vite": "^6.2.2"
-  }
+  },
+  "private": true,
+  "scripts": {
+    "api:dev": "tsx watch src/api/server.ts",
+    "build": "tsc -b && vite build",
+    "db:ensure-config": "tsx scripts/ensure-default-config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "tsx scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "dev": "docker-compose up -d && concurrently \"pnpm api:dev\" \"vite\"",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "type": "module"
 }

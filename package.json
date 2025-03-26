@@ -1,45 +1,11 @@
 {
   "name": "@tanstack/optimistic-monorepo",
-  "private": true,
-  "version": "0.0.0",
   "description": "Optimistic UI library for sync engines",
-  "packageManager": "pnpm@10.6.3",
-  "type": "module",
-  "workspaces": [
-    "packages/*",
-    "examples/*",
-    "examples/react/*"
-  ],
-  "exports": {
-    "./react-electric": {
-      "types": "./dist/lib/electric.d.ts",
-      "import": "./dist/lib/electric.mjs",
-      "require": "./dist/cjs/lib/electric.cjs"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "src"
-  ],
-  "scripts": {
-    "build": "pnpm --filter \"./packages/**\" build",
-    "prepack": "vite build",
-    "test": "pnpm --filter \"./packages/**\" test",
-    "lint": "eslint . --fix",
-    "prepare": "husky",
-    "changeset": "changeset",
-    "changeset:version": "changeset version && pnpm install --no-frozen-lockfile",
-    "changeset:publish": "changeset publish"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix"
-    ]
-  },
-  "keywords": [],
+  "version": "0.0.0",
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
-  "license": "MIT",
+  "dependencies": {
+    "diff": "^7.0.0"
+  },
   "devDependencies": {
     "@changesets/cli": "^2.28.1",
     "@eslint/js": "^9.22.0",
@@ -72,7 +38,41 @@
     "vitest": "^3.0.9",
     "zod": "^3.24.2"
   },
-  "dependencies": {
-    "diff": "^7.0.0"
-  }
+  "exports": {
+    "./react-electric": {
+      "types": "./dist/lib/electric.d.ts",
+      "import": "./dist/lib/electric.mjs",
+      "require": "./dist/cjs/lib/electric.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": [],
+  "license": "MIT",
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
+  },
+  "packageManager": "pnpm@10.6.3",
+  "private": true,
+  "scripts": {
+    "build": "pnpm --filter \"./packages/**\" build",
+    "changeset": "changeset",
+    "changeset:publish": "changeset publish",
+    "changeset:version": "changeset version && pnpm install --no-frozen-lockfile",
+    "lint": "eslint . --fix",
+    "prepack": "vite build",
+    "prepare": "husky",
+    "test": "pnpm --filter \"./packages/**\" test"
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "examples/react/*"
+  ]
 }

@@ -230,6 +230,9 @@ importers:
       '@tanstack/optimistic':
         specifier: workspace:*
         version: link:../optimistic
+      '@tanstack/store':
+        specifier: ^0.7.0
+        version: 0.7.0
       use-sync-external-store:
         specifier: ^1.2.0
         version: 1.4.0(react@19.0.0)
