@@ -105,15 +105,9 @@ importers:
 
   examples/react/todo:
     dependencies:
-      '@tanstack/optimistic':
-        specifier: workspace:*
-        version: link:../../../packages/optimistic
       '@tanstack/react-optimistic':
         specifier: workspace:*
         version: link:../../../packages/react-optimistic
-      '@types/use-sync-external-store':
-        specifier: ^0.0.6
-        version: 0.0.6
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -126,21 +120,18 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.21.2
-      kysely:
-        specifier: ^0.27.3
-        version: 0.27.6
-      mitt:
-        specifier: ^3.0.1
-        version: 3.0.1
-      pg:
-        specifier: ^8.13.3
-        version: 8.14.1
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.5
       react:
         specifier: ^19.0.0
         version: 19.0.0
       react-dom:
         specifier: ^19.0.0
         version: 19.0.0(react@19.0.0)
+      tailwindcss:
+        specifier: ^4.0.17
+        version: 4.0.17
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -4278,6 +4269,9 @@ packages:
   tailwindcss@4.0.14:
     resolution: {integrity: sha512-92YT2dpt671tFiHH/e1ok9D987N9fHD5VWoly1CdPD/Cd1HMglvZwP3nx2yTj2lbXDAHt8QssZkxTLCCTNL+xw==}
 
+  tailwindcss@4.0.17:
+    resolution: {integrity: sha512-OErSiGzRa6rLiOvaipsDZvLMSpsBZ4ysB4f0VKGXUrjw2jfkJRd6kjRKV2+ZmTCNvwtvgdDam5D7w6WXsdLJZw==}
+
   tapable@2.2.1:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
     engines: {node: '>=6'}
@@ -7900,7 +7894,8 @@ snapshots:
 
   kolorist@1.8.0: {}
 
-  kysely@0.27.6: {}
+  kysely@0.27.6:
+    optional: true
 
   levn@0.4.1:
     dependencies:
@@ -8298,7 +8293,8 @@ snapshots:
   pg-cloudflare@1.1.1:
     optional: true
 
-  pg-connection-string@2.7.0: {}
+  pg-connection-string@2.7.0:
+    optional: true
 
   pg-int8@1.0.1: {}
 
@@ -8307,6 +8303,7 @@ snapshots:
   pg-pool@3.8.0(pg@8.14.1):
     dependencies:
       pg: 8.14.1
+    optional: true
 
   pg-protocol@1.8.0: {}
 
@@ -8317,6 +8314,7 @@ snapshots:
       postgres-bytea: 1.0.0
       postgres-date: 1.0.7
       postgres-interval: 1.2.0
+    optional: true
 
   pg-types@4.0.2:
     dependencies:
@@ -8337,10 +8335,12 @@ snapshots:
       pgpass: 1.0.5
     optionalDependencies:
       pg-cloudflare: 1.1.1
+    optional: true
 
   pgpass@1.0.5:
     dependencies:
       split2: 4.2.0
+    optional: true
 
   picocolors@1.1.1: {}
 
@@ -8377,30 +8377,33 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postgres-array@2.0.0: {}
+  postgres-array@2.0.0:
+    optional: true
 
   postgres-array@3.0.4: {}
 
-  postgres-bytea@1.0.0: {}
+  postgres-bytea@1.0.0:
+    optional: true
 
   postgres-bytea@3.0.0:
     dependencies:
       obuf: 1.1.2
 
-  postgres-date@1.0.7: {}
+  postgres-date@1.0.7:
+    optional: true
 
   postgres-date@2.1.0: {}
 
   postgres-interval@1.2.0:
     dependencies:
       xtend: 4.0.2
+    optional: true
 
   postgres-interval@3.0.0: {}
 
   postgres-range@1.1.4: {}
 
-  postgres@3.4.5:
-    optional: true
+  postgres@3.4.5: {}
 
   prelude-ls@1.2.1: {}
 
@@ -8943,6 +8946,8 @@ snapshots:
 
   tailwindcss@4.0.14: {}
 
+  tailwindcss@4.0.17: {}
+
   tapable@2.2.1: {}
 
   term-size@2.2.1: {}
@@ -9413,7 +9418,8 @@ snapshots:
 
   xmlchars@2.2.0: {}
 
-  xtend@4.0.2: {}
+  xtend@4.0.2:
+    optional: true
 
   y18n@5.0.8: {}
 

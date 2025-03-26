@@ -6,7 +6,7 @@
   `pnpm install`
 
 - Start dev server & Docker containers
-  `cd todo-app & pnpm dev`
+  `pnpm dev`
 
 - Run db migrations
-  `cd todo-app & pnpm db:push`
+  `pnpm db:push`

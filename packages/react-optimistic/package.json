@@ -21,11 +21,11 @@
     ".": {
       "import": {
         "types": "./dist/esm/index.d.ts",
-        "default": "./dist/esm/packages/react-optimistic/src/index.js"
+        "default": "./dist/esm/index.js"
       },
       "require": {
         "types": "./dist/cjs/index.d.cts",
-        "default": "./dist/cjs/packages/react-optimistic/src/index.cjs"
+        "default": "./dist/cjs/index.cjs"
       }
     },
     "./package.json": "./package.json"

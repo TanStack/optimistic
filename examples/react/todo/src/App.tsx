@@ -1,10 +1,9 @@
 import React, { useState } from "react"
-import { useCollection } from "../../src/useCollection"
-import { createElectricSync } from "../../src/lib/electric"
+import { createElectricSync, useCollection } from "@tanstack/react-optimistic"
 import { DevTools } from "./DevTools"
 import { updateConfigSchema, updateTodoSchema } from "./db/validation"
 import type { UpdateConfig, UpdateTodo } from "./db/validation"
-import type { Collection } from "../../src/collection"
+import type { Collection } from "@tanstack/react-optimistic"
 import type { FormEvent } from "react"
 
 export default function App() {
