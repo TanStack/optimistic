@@ -231,6 +231,13 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
     const transaction = this.getTransaction(transactionId)
     if (!transaction) return
 
+    // If no mutationFn is provided, throw an error
+    if (!this.collection.config.mutationFn) {
+      throw new Error(
+        `Cannot process transaction without a mutationFn in the collection config`
+      )
+    }
+
     this.setTransactionState(transactionId, `persisting`)
 
     this.collection.config.mutationFn
