@@ -30,7 +30,10 @@
     "vite.config.ts",
     "vitest.config.ts",
     "todo-app/**/*.ts",
-    "todo-app/**/*.tsx"
+    "todo-app/**/*.tsx",
+    "examples/**/*.ts",
+    "examples/**/*.tsx",
+    "eslint.config.mjs"
   ],
   "exclude": ["node_modules"]
 }
