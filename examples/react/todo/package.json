@@ -1,5 +1,6 @@
 {
   "name": "todo-app",
+  "private": true,
   "version": "0.0.0",
   "dependencies": {
     "@tanstack/react-optimistic": "workspace:*",
