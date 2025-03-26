@@ -42,7 +42,7 @@
     "@testing-library/react": "^16.2.0",
     "@electric-sql/client": "1.0.0",
     "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.12",
+    "@types/react-dom": "^19.0.3",
     "@types/use-sync-external-store": "^0.0.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
