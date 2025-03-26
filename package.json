@@ -25,7 +25,7 @@
   "scripts": {
     "build": "pnpm --filter \"./packages/**\" build",
     "prepack": "vite build",
-    "test": "vitest --run",
+    "test": "pnpm --filter \"./packages/**\" test",
     "lint": "eslint . --fix",
     "prepare": "husky",
     "changeset": "changeset",
@@ -34,8 +34,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "vitest related --run"
+      "eslint --fix"
     ]
   },
   "keywords": [],
@@ -48,7 +47,6 @@
     "@svitejs/changesets-changelog-github-compact": "^1.2.0",
     "@tanstack/config": "^0.17.1",
     "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.2.0",
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
@@ -67,8 +65,6 @@
     "mitt": "^3.0.1",
     "prettier": "^3.5.3",
     "publint": "^0.3.9",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "shx": "^0.4.0",
     "tsup": "^8.0.2",
     "typescript": "^5.8.2",
@@ -77,13 +73,6 @@
     "zod": "^3.24.2"
   },
   "dependencies": {
-    "@electric-sql/client": "1.0.0",
-    "@standard-schema/spec": "^1.0.0",
-    "@tanstack/store": "^0.7.0",
-    "@vitest/coverage-istanbul": "^3.0.9",
-    "diff": "^7.0.0",
-    "idb": "^8.0.2",
-    "postgres": "^3.4.5",
-    "use-sync-external-store": "^1.4.0"
+    "diff": "^7.0.0"
   }
 }

@@ -2,24 +2,49 @@
   "name": "@tanstack/react-optimistic",
   "version": "0.0.0",
   "description": "React hooks for optimistic updates",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "npx vitest --run"
   },
+  "type": "module",
+  "types": "dist/esm/index.d.ts",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/packages/react-optimistic/src/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/packages/react-optimistic/src/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src"
+  ],
   "dependencies": {
     "@tanstack/optimistic": "workspace:*",
     "use-sync-external-store": "^1.2.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=16.8.0",
+    "@electric-sql/client": "1.0.0"
   },
   "devDependencies": {
+    "@vitest/coverage-istanbul": "^3.0.9",
+    "@testing-library/react": "^16.2.0",
+    "@electric-sql/client": "1.0.0",
     "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.12",
     "@types/use-sync-external-store": "^0.0.6",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

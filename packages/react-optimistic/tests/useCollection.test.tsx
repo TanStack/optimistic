@@ -32,7 +32,9 @@ describe(`useCollection`, () => {
         mutationFn: {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
-            emitter.emit(`update`, transaction.mutations)
+            act(() => {
+              emitter.emit(`update`, transaction.mutations)
+            })
             return Promise.resolve()
           },
         },
@@ -44,8 +46,8 @@ describe(`useCollection`, () => {
     expect(result.current.data).toEqual([])
 
     // Test single insert with explicit key
-    act(() => {
-      return result.current.insert({ name: `Alice` }, { key: `user1` })
+    await act(async () => {
+      await result.current.insert({ name: `Alice` }, { key: `user1` })
     })
 
     // Verify insert
@@ -54,8 +56,8 @@ describe(`useCollection`, () => {
     expect(result.current.data).toEqual([{ name: `Alice` }])
 
     // Test bulk insert with sparse keys
-    act(() => {
-      result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
+    await act(async () => {
+      await result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
         key: [`user2`, undefined],
       })
     })
@@ -72,8 +74,8 @@ describe(`useCollection`, () => {
     expect(result.current.data).toContainEqual({ name: `Charlie` })
 
     // Test update with callback
-    const updateTransaction = await act(() => {
-      return result.current.update(
+    const updateTransaction = await act(async () => {
+      return await result.current.update(
         result.current.state.get(`user1`)!,
         (item) => {
           item.name = `Alice Smith`
@@ -81,19 +83,21 @@ describe(`useCollection`, () => {
       )
     })
 
-    await updateTransaction.isSynced?.promise
+    await act(async () => {
+      await updateTransaction.isSynced?.promise
+    })
 
     // Verify update
     expect(result.current.state.get(`user1`)).toEqual({ name: `Alice Smith` })
     expect(result.current.data).toContainEqual({ name: `Alice Smith` })
 
     // Test bulk update with metadata
-    await act(() => {
+    await act(async () => {
       const items = [
         result.current.state.get(`user1`)!,
         result.current.state.get(`user2`)!,
       ]
-      return result.current.update(
+      return await result.current.update(
         items,
         { metadata: { bulkUpdate: true } },
         (drafts) => {
@@ -117,8 +121,8 @@ describe(`useCollection`, () => {
     expect(result.current.data).toContainEqual({ name: `Bob Sr.` })
 
     // Test single delete
-    await act(() => {
-      return result.current.delete(result.current.state.get(`user1`)!)
+    await act(async () => {
+      await result.current.delete(result.current.state.get(`user1`)!)
     })
 
     // Verify single delete
@@ -126,12 +130,14 @@ describe(`useCollection`, () => {
     expect(result.current.data).not.toContainEqual({ name: `Alice Smith Jr.` })
 
     // Test bulk delete with metadata
-    act(() => {
+    await act(async () => {
       const items = [
         result.current.state.get(`user2`)!,
         result.current.state.get(charlieKey!)!,
       ]
-      result.current.delete(items, { metadata: { reason: `bulk cleanup` } })
+      await result.current.delete(items, {
+        metadata: { reason: `bulk cleanup` },
+      })
     })
 
     // Verify all items are deleted
@@ -142,7 +148,7 @@ describe(`useCollection`, () => {
     expect(persistMock).toHaveBeenCalledTimes(6) // 2 inserts + 2 updates + 2 deletes
   })
 
-  it(`should expose state, items, and data properties correctly`, () => {
+  it(`should expose state, items, and data properties correctly`, async () => {
     const emitter = mitt()
     const persistMock = vi.fn().mockResolvedValue(undefined)
 
@@ -153,7 +159,9 @@ describe(`useCollection`, () => {
         mutationFn: {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
-            emitter.emit(`update`, transaction.mutations)
+            act(() => {
+              emitter.emit(`update`, transaction.mutations)
+            })
             return Promise.resolve()
           },
         },
@@ -182,8 +190,8 @@ describe(`useCollection`, () => {
     expect(result.current.data.length).toBe(0)
 
     // Insert some test data
-    act(() => {
-      result.current.insert(
+    await act(async () => {
+      await result.current.insert(
         [
           { id: 1, name: `Item 1` },
           { id: 2, name: `Item 2` },
@@ -211,7 +219,7 @@ describe(`useCollection`, () => {
     expect(result.current.data).toContainEqual({ id: 3, name: `Item 3` })
   })
 
-  it(`should work with a selector function`, () => {
+  it(`should work with a selector function`, async () => {
     const emitter = mitt()
     const persistMock = vi.fn().mockResolvedValue(undefined)
 
@@ -222,7 +230,9 @@ describe(`useCollection`, () => {
         mutationFn: {
           persist: persistMock,
           awaitSync: ({ transaction }) => {
-            emitter.emit(`update`, transaction.mutations)
+            act(() => {
+              emitter.emit(`update`, transaction.mutations)
+            })
             return Promise.resolve()
           },
         },
@@ -252,8 +262,8 @@ describe(`useCollection`, () => {
     expect(result.current.data.length).toBe(0)
 
     // Insert some test data
-    act(() => {
-      result.current.insert(
+    await act(async () => {
+      await result.current.insert(
         [
           { id: 1, name: `Alice` },
           { id: 2, name: `Bob` },

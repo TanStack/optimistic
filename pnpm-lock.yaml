@@ -238,9 +238,15 @@ importers:
 
   packages/optimistic:
     dependencies:
+      '@standard-schema/spec':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@tanstack/store':
         specifier: ^0.7.0
         version: 0.7.0
+      idb:
+        specifier: ^8.0.2
+        version: 8.0.2
       typescript:
         specifier: '>=4.7'
         version: 5.8.2
@@ -254,6 +260,9 @@ importers:
         specifier: ^1.2.0
         version: 1.4.0(react@19.0.0)
     devDependencies:
+      '@electric-sql/client':
+        specifier: 1.0.0
+        version: 1.0.0
       '@types/react':
         specifier: ^19.0.12
         version: 19.0.12

@@ -10,11 +10,11 @@
     ".": {
       "import": {
         "types": "./dist/esm/index.d.ts",
-        "default": "./dist/esm/packages/optimistic/src/index.js"
+        "default": "./dist/esm/index.js"
       },
       "require": {
         "types": "./dist/cjs/index.d.cts",
-        "default": "./dist/cjs/packages/optimistic/src/index.cjs"
+        "default": "./dist/cjs/index.cjs"
       }
     },
     "./package.json": "./package.json"
@@ -30,10 +30,14 @@
     "test": "npx vitest --run"
   },
   "dependencies": {
-    "@tanstack/store": "^0.7.0"
+    "@tanstack/store": "^0.7.0",
+    "idb": "^8.0.2",
+    "@standard-schema/spec": "^1.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-istanbul": "^3.0.9"
   },
   "peerDependencies": {
     "typescript": ">=4.7"
-  },
-  "devDependencies": {}
+  }
 }
