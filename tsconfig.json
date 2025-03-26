@@ -24,10 +24,10 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "src/**/*.ts", 
-    "src/**/*.tsx", 
-    "test/**/*.ts", 
-    "vite.config.ts", 
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "test/**/*.ts",
+    "vite.config.ts",
     "vitest.config.ts",
     "todo-app/**/*.ts",
     "todo-app/**/*.tsx"

@@ -3,10 +3,10 @@
 ## How to run
 
 - Install packages
-`pnpm install`
+  `pnpm install`
 
 - Start dev server & Docker containers
-`cd todo-app & pnpm dev`
+  `cd todo-app & pnpm dev`
 
 - Run db migrations
-`cd todo-app & pnpm db:push`
+  `cd todo-app & pnpm db:push`

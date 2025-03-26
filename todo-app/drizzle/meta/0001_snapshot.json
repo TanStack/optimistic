@@ -48,9 +48,7 @@
         "config_key_unique": {
           "name": "config_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},

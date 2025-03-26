@@ -47,9 +47,7 @@
       "uniqueConstraints": {
         "config_key_unique": {
           "name": "config_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "nullsNotDistinct": false
         }
       },
