@@ -120,9 +120,6 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.21.2
-      pg:
-        specifier: ^8.14.1
-        version: 8.14.1
       postgres:
         specifier: ^3.4.5
         version: 3.4.5
@@ -190,6 +187,9 @@ importers:
       eslint-plugin-react-refresh:
         specifier: ^0.4.5
         version: 0.4.19(eslint@9.22.0(jiti@2.4.2))
+      pg:
+        specifier: ^8.14.1
+        version: 8.14.1
       tsx:
         specifier: ^4.6.2
         version: 4.19.3
