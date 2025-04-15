@@ -8,6 +8,7 @@
     "drizzle-orm": "^0.40.1",
     "drizzle-zod": "^0.7.0",
     "express": "^4.19.2",
+    "pg": "^8.14.1",
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
