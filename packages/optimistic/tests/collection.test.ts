@@ -307,7 +307,7 @@ describe(`Collection`, () => {
     expect(collection.state.has(keys[3])).toBe(false)
   })
 
-  it(`synced updates shouldn't be applied while there's an ongoing transaction`, async () => {
+  it(`synced updates should be applied while there's an ongoing transaction`, async () => {
     const emitter = mitt()
 
     // new collection w/ mock sync/mutation
@@ -336,8 +336,15 @@ describe(`Collection`, () => {
           // we're still in the middle of persisting a transaction.
           emitter.emit(`update`, [
             { key: `the-key`, type: `insert`, changes: { bar: `value` } },
+            // This update is ignored because the optimistic update overrides it.
+            { key: `foo`, type: `update`, changes: { bar: `value2` } },
           ])
-          expect(collection.state).toEqual(new Map([[`foo`, { value: `bar` }]]))
+          expect(collection.state).toEqual(
+            new Map([
+              [`foo`, { value: `bar` }],
+              [`the-key`, { bar: `value` }],
+            ])
+          )
           // Remove it so we don't have to assert against it below
           emitter.emit(`update`, [{ key: `the-key`, type: `delete` }])
           return Promise.resolve()

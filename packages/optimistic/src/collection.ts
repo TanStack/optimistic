@@ -235,17 +235,12 @@ export class Collection<T extends object = Record<string, unknown>> {
         const combined = new Map<string, T>(syncedData)
         // Apply the optimistic operations on top of the synced state.
         for (const operation of operations) {
-          let existingValue
           switch (operation.type) {
             case `insert`:
               combined.set(operation.key, operation.value)
               break
             case `update`:
-              existingValue = syncedData.get(operation.key)
-              combined.set(operation.key, {
-                ...(existingValue || {}),
-                ...operation.value,
-              })
+              combined.set(operation.key, operation.value)
               break
             case `delete`:
               combined.delete(operation.key)
@@ -338,86 +333,64 @@ export class Collection<T extends object = Record<string, unknown>> {
    * This method processes operations from pending transactions and applies them to the synced data
    */
   commitPendingTransactions = () => {
-    // Check if there's any transactions that aren't finished.
-    // If not, proceed.
-    // If so, subscribe to transactions and keep checking if can proceed.
-    //
-    // The plan is to have a finer-grained locking but just blocking applying
-    // synced data until a persisting transaction is finished seems fine.
-    // We also don't yet have support for transactions that don't immediately
-    // persist so right now, blocking sync only delays their application for a
-    // few hundred milliseconds. So not the worse thing in th world.
-    // But something to fix in the future.
-    // Create a Set with only the terminal states
-    const terminalStates = new Set<TransactionState>([`completed`, `failed`])
-
-    // Function to check if a state is NOT a terminal state
-    function isNotTerminalState({ state }: Transaction): boolean {
-      return !terminalStates.has(state)
-    }
-    if (
-      this.transactions.size === 0 ||
-      !Array.from(this.transactions.values()).some(isNotTerminalState)
-    ) {
-      const keys = new Set<string>()
-      batch(() => {
-        for (const transaction of this.pendingSyncedTransactions) {
-          for (const operation of transaction.operations) {
-            keys.add(operation.key)
-            this.syncedMetadata.setState((prevData) => {
-              switch (operation.type) {
-                case `insert`:
-                  prevData.set(operation.key, operation.metadata)
-                  break
-                case `update`:
-                  prevData.set(operation.key, {
-                    ...prevData.get(operation.key)!,
-                    ...operation.metadata,
-                  })
-                  break
-                case `delete`:
-                  prevData.delete(operation.key)
-                  break
-              }
-              return prevData
-            })
-            this.syncedData.setState((prevData) => {
-              switch (operation.type) {
-                case `insert`:
-                  prevData.set(operation.key, operation.value)
-                  break
-                case `update`:
-                  prevData.set(operation.key, {
-                    ...prevData.get(operation.key)!,
-                    ...operation.value,
-                  })
-                  break
-                case `delete`:
-                  prevData.delete(operation.key)
-                  break
-              }
-              return prevData
-            })
-          }
+    const keys = new Set<string>()
+    batch(() => {
+      for (const transaction of this.pendingSyncedTransactions) {
+        for (const operation of transaction.operations) {
+          keys.add(operation.key)
+          this.syncedMetadata.setState((prevData) => {
+            switch (operation.type) {
+              case `insert`:
+                prevData.set(operation.key, operation.metadata)
+                break
+              case `update`:
+                prevData.set(operation.key, {
+                  ...prevData.get(operation.key)!,
+                  ...operation.metadata,
+                })
+                break
+              case `delete`:
+                prevData.delete(operation.key)
+                break
+            }
+            return prevData
+          })
+          this.syncedData.setState((prevData) => {
+            switch (operation.type) {
+              case `insert`:
+                prevData.set(operation.key, operation.value)
+                break
+              case `update`:
+                prevData.set(operation.key, {
+                  ...prevData.get(operation.key)!,
+                  ...operation.value,
+                })
+                break
+              case `delete`:
+                prevData.delete(operation.key)
+                break
+            }
+            return prevData
+          })
         }
-      })
-
-      keys.forEach((key) => {
-        const curValue = this.state.get(key)
-        if (curValue) {
-          this.objectKeyMap.set(curValue, key)
-        }
-      })
-
-      this.pendingSyncedTransactions = []
-
-      // Call any registered one-time commit listeners
-      if (!this.hasReceivedFirstCommit) {
-        this.hasReceivedFirstCommit = true
-        const callbacks = [...this.onFirstCommitCallbacks]
-        this.onFirstCommitCallbacks = []
-        callbacks.forEach((callback) => callback())
       }
+    })
+
+    keys.forEach((key) => {
+      const curValue = this.state.get(key)
+      if (curValue) {
+        this.objectKeyMap.set(curValue, key)
+      }
+    })
+
+    this.pendingSyncedTransactions = []
+
+    // Call any registered one-time commit listeners
+    if (!this.hasReceivedFirstCommit) {
+      this.hasReceivedFirstCommit = true
+      const callbacks = [...this.onFirstCommitCallbacks]
+      this.onFirstCommitCallbacks = []
+      callbacks.forEach((callback) => callback())
     }
   }
 
