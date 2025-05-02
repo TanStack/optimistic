@@ -199,11 +199,6 @@ export class Collection<T extends object = Record<string, unknown>> {
     this.optimisticOperations = new Derived({
       fn: ({ currDepVals: [transactions] }) => {
         const result = Array.from(transactions.values())
-          .filter(
-            (transaction) =>
-              transaction.state !== `completed` &&
-              transaction.state !== `failed`
-          )
           .map((transaction) =>
             transaction.mutations.map((mutation) => {
               const message: ChangeMessage<T> = {
@@ -713,12 +708,15 @@ export class Collection<T extends object = Record<string, unknown>> {
     const itemsArray = Array.isArray(items) ? items : [items]
     const mutations: Array<PendingMutation> = []
 
+    console.log({ items, state: this.state, objectKeyMap: this.objectKeyMap })
     for (const item of itemsArray) {
       let key: string
       if (typeof item === `object` && (item as unknown) !== null) {
         const objectKey = this.objectKeyMap.get(item)
         if (objectKey === undefined) {
-          throw new Error(`Object not found in collection`)
+          throw new Error(
+            `Object not found in collection: ${JSON.stringify(item)}`
+          )
         }
         key = objectKey
       } else if (typeof item === `string`) {
