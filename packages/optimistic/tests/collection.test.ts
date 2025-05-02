@@ -3,7 +3,11 @@ import "fake-indexeddb/auto"
 import mitt from "mitt"
 import { z } from "zod"
 import { Collection, SchemaValidationError } from "../src/collection"
-import type { ChangeMessage, PendingMutation } from "../src/types"
+import type {
+  ChangeMessage,
+  OptimisticChangeMessage,
+  PendingMutation,
+} from "../src/types"
 
 describe(`Collection`, () => {
   it(`should throw if there's no sync config`, () => {
@@ -185,10 +189,11 @@ describe(`Collection`, () => {
     })
 
     // Check the optimistic operation is there
-    const insertOperation: ChangeMessage = {
+    const insertOperation: OptimisticChangeMessage = {
       key: insertedKey,
       value: { value: `bar` },
       type: `insert`,
+      isActive: true,
     }
     expect(collection.optimisticOperations.state[0]).toEqual(insertOperation)
 
@@ -222,7 +227,9 @@ describe(`Collection`, () => {
       // @ts-expect-error possibly undefined is ok in test
       Array.from(collection.transactions.values())[0].state
     ).toMatchInlineSnapshot(`"completed"`)
-    expect(collection.optimisticOperations.state).toEqual([])
+    expect(
+      collection.optimisticOperations.state.filter((o) => o.isActive)
+    ).toEqual([])
     expect(collection.state).toEqual(new Map([[insertedKey, { value: `bar` }]]))
 
     // Test insert with provided key
@@ -376,10 +383,11 @@ describe(`Collection`, () => {
     })
 
     // Check the optimistic operation is there
-    const insertOperation: ChangeMessage = {
+    const insertOperation: OptimisticChangeMessage = {
       key: `foo`,
       value: { value: `bar` },
       type: `insert`,
+      isActive: true,
     }
     expect(collection.optimisticOperations.state[0]).toEqual(insertOperation)
 

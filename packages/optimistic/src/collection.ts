@@ -7,6 +7,7 @@ import type {
   CollectionConfig,
   InsertConfig,
   OperationConfig,
+  OptimisticChangeMessage,
   PendingMutation,
   StandardSchema,
   Transaction,
@@ -25,7 +26,7 @@ const loadingCollections = new Map<
 
 interface PendingSyncedTransaction<T extends object = Record<string, unknown>> {
   committed: boolean
-  operations: Array<ChangeMessage<T>>
+  operations: Array<OptimisticChangeMessage<T>>
 }
 
 /**
@@ -151,7 +152,7 @@ export class Collection<T extends object = Record<string, unknown>> {
   public transactionManager!: ReturnType<typeof getTransactionManager<T>>
   private transactionStore: TransactionStore
 
-  public optimisticOperations: Derived<Array<ChangeMessage<T>>>
+  public optimisticOperations: Derived<Array<OptimisticChangeMessage<T>>>
   public derivedState: Derived<Map<string, T>>
   public derivedArray: Derived<Array<T>>
 
@@ -199,12 +200,16 @@ export class Collection<T extends object = Record<string, unknown>> {
     this.optimisticOperations = new Derived({
       fn: ({ currDepVals: [transactions] }) => {
         const result = Array.from(transactions.values())
-          .map((transaction) =>
-            transaction.mutations.map((mutation) => {
-              const message: ChangeMessage<T> = {
+          .map((transaction) => {
+            const isActive = ![`completed`, `failed`].includes(
+              transaction.state
+            )
+            return transaction.mutations.map((mutation) => {
+              const message: OptimisticChangeMessage<T> = {
                 type: mutation.type,
                 key: mutation.key,
                 value: mutation.modified as T,
+                isActive,
               }
               if (
                 mutation.metadata !== undefined &&
@@ -214,7 +219,7 @@ export class Collection<T extends object = Record<string, unknown>> {
               }
               return message
             })
-          )
+          })
           .flat()
 
         return result
@@ -232,16 +237,18 @@ export class Collection<T extends object = Record<string, unknown>> {
         // Apply the optimistic operations on top of the synced state.
         for (const operation of operations) {
           optimisticKeys.add(operation.key)
-          switch (operation.type) {
-            case `insert`:
-              combined.set(operation.key, operation.value)
-              break
-            case `update`:
-              combined.set(operation.key, operation.value)
-              break
-            case `delete`:
-              combined.delete(operation.key)
-              break
+          if (operation.isActive) {
+            switch (operation.type) {
+              case `insert`:
+                combined.set(operation.key, operation.value)
+                break
+              case `update`:
+                combined.set(operation.key, operation.value)
+                break
+              case `delete`:
+                combined.delete(operation.key)
+                break
+            }
           }
         }
 
