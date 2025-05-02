@@ -47,7 +47,7 @@ describe(`useCollection`, () => {
 
     // Test single insert with explicit key
     await act(async () => {
-      result.current.insert({ name: `Alice` }, { key: `user1` })
+      await result.current.insert({ name: `Alice` }, { key: `user1` })
     })
 
     // Verify insert
@@ -57,7 +57,7 @@ describe(`useCollection`, () => {
 
     // Test bulk insert with sparse keys
     await act(async () => {
-      result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
+      await result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
         key: [`user2`, undefined],
       })
     })
@@ -75,7 +75,7 @@ describe(`useCollection`, () => {
 
     // Test update with callback
     const updateTransaction = await act(async () => {
-      return result.current.update(
+      return await result.current.update(
         result.current.state.get(`user1`)!,
         (item) => {
           item.name = `Alice Smith`
@@ -97,7 +97,7 @@ describe(`useCollection`, () => {
         result.current.state.get(`user1`)!,
         result.current.state.get(`user2`)!,
       ]
-      return result.current.update(
+      return await result.current.update(
         items,
         { metadata: { bulkUpdate: true } },
         (drafts) => {
@@ -122,7 +122,7 @@ describe(`useCollection`, () => {
 
     // Test single delete
     await act(async () => {
-      result.current.delete(result.current.state.get(`user1`)!)
+      await result.current.delete(result.current.state.get(`user1`)!)
     })
 
     // Verify single delete
@@ -191,7 +191,7 @@ describe(`useCollection`, () => {
 
     // Insert some test data
     await act(async () => {
-      result.current.insert(
+      await result.current.insert(
         [
           { id: 1, name: `Item 1` },
           { id: 2, name: `Item 2` },
@@ -263,7 +263,7 @@ describe(`useCollection`, () => {
 
     // Insert some test data
     await act(async () => {
-      result.current.insert(
+      await result.current.insert(
         [
           { id: 1, name: `Alice` },
           { id: 2, name: `Bob` },

@@ -227,8 +227,11 @@ export class Collection<T extends object = Record<string, unknown>> {
     this.derivedState = new Derived({
       fn: ({ currDepVals: [syncedData, operations] }) => {
         const combined = new Map<string, T>(syncedData)
+        const optimisticKeys = new Set<string>()
+
         // Apply the optimistic operations on top of the synced state.
         for (const operation of operations) {
+          optimisticKeys.add(operation.key)
           switch (operation.type) {
             case `insert`:
               combined.set(operation.key, operation.value)
@@ -243,11 +246,6 @@ export class Collection<T extends object = Record<string, unknown>> {
         }
 
         // Update object => key mappings
-        const optimisticKeys = new Set<string>()
-        for (const operation of operations) {
-          optimisticKeys.add(operation.key)
-        }
-
         optimisticKeys.forEach((key) => {
           if (combined.has(key)) {
             this.objectKeyMap.set(combined.get(key)!, key)
@@ -708,7 +706,6 @@ export class Collection<T extends object = Record<string, unknown>> {
     const itemsArray = Array.isArray(items) ? items : [items]
     const mutations: Array<PendingMutation> = []
 
-    console.log({ items, state: this.state, objectKeyMap: this.objectKeyMap })
     for (const item of itemsArray) {
       let key: string
       if (typeof item === `object` && (item as unknown) !== null) {
