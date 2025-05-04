@@ -1,29 +1,30 @@
-import {
-  D2,
-  type IStreamBuilder,
-  MessageType,
-  MultiSet,
-  type MultiSetArray,
-  output,
-  type RootStreamBuilder,
-} from "@electric-sql/d2ts"
-import { batch, Effect } from "@tanstack/store"
-import { compileQuery } from "./compiler.js"
+import { D2, MessageType, MultiSet, output } from "@electric-sql/d2ts"
+import { Effect, batch } from "@tanstack/store"
+import { compileQueryPipeline } from "./pipeline-compiler.js"
 import { ResultCollection } from "./result-collection.js"
-import type { BaseQueryBuilder } from "./query-builder.js"
+import type { ChangeMessage } from "../types.js"
+import type {
+  IStreamBuilder,
+  MultiSetArray,
+  RootStreamBuilder,
+} from "@electric-sql/d2ts"
+import type { BaseQueryBuilder, ResultsFromContext } from "./query-builder.js"
 import type { Context, Schema } from "./types.js"
-import { ChangeMessage } from "../types.js"
-import { Collection } from "../collection.js"
+import type { Collection } from "../collection.js"
 
-export class CompiledQuery<
-  TResults extends object = Record<string, unknown>,
-> {
+export function compileQuery<TContext extends Context<Schema>>(
+  queryBuilder: BaseQueryBuilder<TContext>
+) {
+  return new CompiledQuery<ResultsFromContext<TContext>>(queryBuilder)
+}
+
+export class CompiledQuery<TResults extends object = Record<string, unknown>> {
   private graph: D2
   private inputs: Record<string, RootStreamBuilder<any>>
   private inputCollections: Record<string, Collection<any>>
   private resultCollection: ResultCollection<TResults>
   private state: `compiled` | `running` | `stopped` = `compiled`
-  private version: number = 0
+  private version = 0
   private unsubscribeEffect?: () => void
 
   constructor(queryBuilder: BaseQueryBuilder<Context<Schema>>) {
@@ -44,7 +45,10 @@ export class CompiledQuery<
       ])
     )
 
-    compileQuery<IStreamBuilder<[string, unknown]>>(query, this.inputs).pipe(
+    compileQueryPipeline<IStreamBuilder<[string, unknown]>>(
+      query,
+      this.inputs
+    ).pipe(
       output((msg) => {
         if (msg.type === MessageType.DATA) {
           this.resultCollection.applyChanges(msg.data.collection)
@@ -66,7 +70,8 @@ export class CompiledQuery<
       } else if (change.type === `update`) {
         multiSetArray.push([[change.key, change.previousValue], -1])
         multiSetArray.push([[change.key, change.value], 1])
-      } else if (change.type === `delete`) {
+      } else {
+        // change.type === `delete`
         multiSetArray.push([[change.key, change.previousValue], -1])
       }
     }

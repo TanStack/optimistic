@@ -30,7 +30,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .select(`@department_id`, { count: { COUNT: `@id` } as any })
       .groupBy(`@department_id`)
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
     expect(builtQuery.groupBy).toBe(`@department_id`)
   })
 
@@ -40,7 +40,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .select(`@department_id`, `@salary`, { count: { COUNT: `@id` } as any })
       .groupBy([`@department_id`, `@salary`])
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
     expect(builtQuery.groupBy).toEqual([`@department_id`, `@salary`])
   })
 
@@ -51,7 +51,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .groupBy(`@department_id`)
       .groupBy(`@salary`) // This should override
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
     expect(builtQuery.groupBy).toBe(`@salary`)
   })
 
@@ -67,7 +67,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .select(`@d.name`, { avg_salary: { AVG: `@e.salary` } as any })
       .groupBy(`@d.name`)
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
     expect(builtQuery.groupBy).toBe(`@d.name`)
   })
 
@@ -84,7 +84,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .groupBy(`@d.name`)
       .having({ SUM: `@e.salary` } as any, `>`, 100000)
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
     expect(builtQuery.groupBy).toBe(`@d.name`)
     expect(builtQuery.having).toEqual([{ SUM: `@e.salary` }, `>`, 100000])
   })
@@ -105,7 +105,7 @@ describe(`QueryBuilder.groupBy`, () => {
       .orderBy(`@d.name`)
       .limit(10)
 
-    const builtQuery = query.buildQuery()
+    const builtQuery = query._query
 
     // Check groupBy
     expect(builtQuery.groupBy).toBe(`@d.name`)

@@ -23,7 +23,6 @@ import type {
   RemoveIndexSignature,
   Schema,
 } from "./types.js"
-import { CompiledQuery } from "./compiled-query"
 
 type CollectionRef = { [K: string]: Collection<any> }
 
@@ -844,16 +843,6 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
   get _query(): Query<TContext> {
     return this.query as Query<TContext>
   }
-
-  /**
-   * Compile the query into a CompiledQuery object.
-   *
-   * @returns A new CompiledQuery object
-   */
-  compile() {
-    // TODO: add validation that the query has everything it needs
-    return new CompiledQuery<ResultsFromContext<TContext>>(this as any)
-  }
 }
 
 type InitialQueryBuilder<TContext extends Context<Schema>> = Pick<
@@ -879,7 +868,7 @@ export function queryBuilder<TBaseSchema extends Schema = {}>() {
   }>
 }
 
-type ResultsFromContext<TContext extends Context<Schema>> =
+export type ResultsFromContext<TContext extends Context<Schema>> =
   TContext[`result`] extends object
     ? TContext[`result`]
     : TContext[`result`] extends undefined
