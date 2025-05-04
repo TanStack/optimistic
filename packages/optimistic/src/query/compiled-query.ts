@@ -8,12 +8,12 @@ import type {
   MultiSetArray,
   RootStreamBuilder,
 } from "@electric-sql/d2ts"
-import type { BaseQueryBuilder, ResultsFromContext } from "./query-builder.js"
+import type { QueryBuilder, ResultsFromContext } from "./query-builder.js"
 import type { Context, Schema } from "./types.js"
 import type { Collection } from "../collection.js"
 
 export function compileQuery<TContext extends Context<Schema>>(
-  queryBuilder: BaseQueryBuilder<TContext>
+  queryBuilder: QueryBuilder<TContext>
 ) {
   return new CompiledQuery<ResultsFromContext<TContext>>(queryBuilder)
 }
@@ -27,7 +27,7 @@ export class CompiledQuery<TResults extends object = Record<string, unknown>> {
   private version = 0
   private unsubscribeEffect?: () => void
 
-  constructor(queryBuilder: BaseQueryBuilder<Context<Schema>>) {
+  constructor(queryBuilder: QueryBuilder<Context<Schema>>) {
     const query = queryBuilder._query
     const collections = query.collections
 
@@ -55,6 +55,7 @@ export class CompiledQuery<TResults extends object = Record<string, unknown>> {
         }
       })
     )
+    this.graph.finalize()
   }
 
   get results() {
@@ -63,16 +64,16 @@ export class CompiledQuery<TResults extends object = Record<string, unknown>> {
 
   private sendChangesToInput(inputKey: string, changes: Array<ChangeMessage>) {
     const input = this.inputs[inputKey]!
-    const multiSetArray: MultiSetArray<[string, unknown]> = []
+    const multiSetArray: MultiSetArray<unknown> = []
     for (const change of changes) {
       if (change.type === `insert`) {
-        multiSetArray.push([[change.key, change.value], 1])
+        multiSetArray.push([change.value, 1])
       } else if (change.type === `update`) {
-        multiSetArray.push([[change.key, change.previousValue], -1])
-        multiSetArray.push([[change.key, change.value], 1])
+        multiSetArray.push([change.previousValue, -1])
+        multiSetArray.push([change.value, 1])
       } else {
         // change.type === `delete`
-        multiSetArray.push([[change.key, change.previousValue], -1])
+        multiSetArray.push([change.value, -1])
       }
     }
     input.sendData(this.version, new MultiSet(multiSetArray))

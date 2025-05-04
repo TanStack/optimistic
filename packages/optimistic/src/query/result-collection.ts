@@ -2,12 +2,16 @@ import { Store } from "@tanstack/store"
 import type { MultiSet } from "@electric-sql/d2ts"
 
 export class ResultCollection<T extends object = Record<string, unknown>> {
-  private resultState = new Store<Map<string, T>>(new Map())
+  private resultStore = new Store<Map<string, T>>(new Map())
 
   constructor() {}
 
+  get store() {
+    return this.resultStore
+  }
+
   get state() {
-    return this.resultState
+    return this.resultStore.state
   }
 
   applyChanges(changeCollection: MultiSet<[string, unknown]>) {
@@ -31,9 +35,10 @@ export class ResultCollection<T extends object = Record<string, unknown>> {
       }
     }
 
-    this.resultState.setState((state) => {
+    this.resultStore.setState((state) => {
       const newState = new Map(state)
-      for (const [key, changes] of changesByKey) {
+      for (const [rawKey, changes] of changesByKey) {
+        const key = rawKey.toString()
         const { deletes, inserts, value } = changes
         if (inserts >= deletes) {
           newState.set(key, value as T)

@@ -845,12 +845,12 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
   }
 }
 
-type InitialQueryBuilder<TContext extends Context<Schema>> = Pick<
+export type InitialQueryBuilder<TContext extends Context<Schema>> = Pick<
   BaseQueryBuilder<TContext>,
   `from` | `with`
 >
 
-type QueryBuilder<TContext extends Context<Schema>> = Omit<
+export type QueryBuilder<TContext extends Context<Schema>> = Omit<
   BaseQueryBuilder<TContext>,
   `from`
 >
