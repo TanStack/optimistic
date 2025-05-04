@@ -23,6 +23,7 @@ import type {
   RemoveIndexSignature,
   Schema,
 } from "./types.js"
+import { CompiledQuery } from "./compiled-query"
 
 type CollectionRef = { [K: string]: Collection<any> }
 
@@ -387,16 +388,6 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
     }
 
     return newBuilder as QueryBuilder<TContext>
-  }
-
-  /**
-   * Build and return the final query object.
-   *
-   * @returns The built query
-   */
-  buildQuery(): Query<TContext> {
-    // Create a copy of the query to avoid exposing the internal state directly
-    return { ...this.query } as Query<TContext>
   }
 
   /**
@@ -828,7 +819,7 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
     )
 
     // Get the query from the builder
-    const cteQuery = cteQueryBuilder.buildQuery()
+    const cteQuery = cteQueryBuilder._query
 
     // Add an 'as' property to the CTE
     const withQuery: WithQuery<any> = {
@@ -848,6 +839,20 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
       baseSchema: TContext[`baseSchema`] & { [K in TName]: TResult }
       schema: TContext[`schema`]
     }>
+  }
+
+  get _query(): Query<TContext> {
+    return this.query as Query<TContext>
+  }
+
+  /**
+   * Compile the query into a CompiledQuery object.
+   *
+   * @returns A new CompiledQuery object
+   */
+  compile() {
+    // TODO: add validation that the query has everything it needs
+    return new CompiledQuery<ResultsFromContext<TContext>>(this as any)
   }
 }
 
@@ -873,6 +878,13 @@ export function queryBuilder<TBaseSchema extends Schema = {}>() {
     schema: {}
   }>
 }
+
+type ResultsFromContext<TContext extends Context<Schema>> =
+  TContext[`result`] extends object
+    ? TContext[`result`]
+    : TContext[`result`] extends undefined
+      ? TContext[`schema`]
+      : object
 
 export type ResultFromQueryBuilder<TQueryBuilder> = Flatten<
   TQueryBuilder extends QueryBuilder<infer C>
