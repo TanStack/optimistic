@@ -374,7 +374,7 @@ export class Collection<T extends object = Record<string, unknown>> {
   commitPendingTransactions = () => {
     if (
       !Array.from(this.transactions.values()).some(
-        ({ state }) => state !== `persisting`
+        ({ state }) => state === `persisting`
       )
     ) {
       const keys = new Set<string>()
