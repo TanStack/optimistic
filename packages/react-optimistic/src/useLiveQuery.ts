@@ -16,7 +16,7 @@ export function useLiveQuery<
     q: InitialQueryBuilder<Context<Schema>>
   ) => QueryBuilder<TResultContext>,
   deps: Array<unknown> = []
-): ResultsFromContext<TResultContext> {
+): Map<string, ResultsFromContext<TResultContext>> {
   const compiledQuery = useMemo(() => {
     const query = queryFn(queryBuilder())
     const compiled = compileQuery(query)
