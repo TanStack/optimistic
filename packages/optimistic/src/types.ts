@@ -4,6 +4,10 @@ import type { StandardSchemaV1 } from "@standard-schema/spec"
 
 export type TransactionState = `pending` | `persisting` | `completed` | `failed`
 
+/**
+ * Represents a pending mutation within a transaction
+ * Contains information about the original and modified data, as well as metadata
+ */
 export interface PendingMutation {
   mutationId: string
   original: Record<string, unknown>
@@ -15,8 +19,24 @@ export interface PendingMutation {
   syncMetadata: Record<string, unknown>
   createdAt: Date
   updatedAt: Date
+  /** The ID of the collection this mutation belongs to */
+  collectionId: string
 }
 
+/**
+ * Configuration options for creating a new transaction
+ */
+export interface TransactionConfig {
+  /** Unique identifier for the transaction */
+  id?: string
+  /** Custom metadata to associate with the transaction */
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * Represents a transaction in the system
+ * A transaction groups related mutations across collections
+ */
 export interface Transaction {
   id: string
   state: TransactionState
@@ -38,6 +58,25 @@ export interface Transaction {
 }
 
 export type TransactionWithoutToObject = Omit<Transaction, `toObject`>
+
+/**
+ * Configuration for the mutation factory
+ * Used to create mutation functions that can span multiple collections
+ */
+export interface MutationFactoryConfig {
+  /**
+   * Function to persist mutations to the backend
+   * Receives all mutations across all collections involved in the transaction
+   */
+  mutationFn: (params: {
+    mutations: Array<PendingMutation>
+    transaction: Transaction
+  }) => Promise<any>
+  /**
+   * Custom metadata to associate with all transactions created by this factory
+   */
+  metadata?: Record<string, unknown>
+}
 
 type Value<TExtensions = never> =
   | string
@@ -83,11 +122,6 @@ export interface OptimisticChangeMessage<
   isActive?: boolean
 }
 
-export type MutationFn<T extends object = Record<string, unknown>> = (params: {
-  transaction: Transaction
-  collection: Collection<T>
-}) => Promise<any>
-
 /**
  * The Standard Schema interface.
  * This follows the standard-schema specification: https://github.com/standard-schema/standard-schema
@@ -118,7 +152,6 @@ export interface InsertConfig {
 export interface CollectionConfig<T extends object = Record<string, unknown>> {
   id: string
   sync: SyncConfig<T>
-  mutationFn?: MutationFn<T>
   schema?: StandardSchema<T>
 }
 
