@@ -1,20 +1,22 @@
 import { useEffect, useMemo } from "react"
 import { useStore } from "@tanstack/react-store"
-import { queryBuilder, compileQuery } from "@tanstack/optimistic"
+import { compileQuery, queryBuilder } from "@tanstack/optimistic"
 import type {
+  Context,
   InitialQueryBuilder,
   QueryBuilder,
-  Context,
+  ResultsFromContext,
   Schema,
-  ResultFromQueryBuilder,
 } from "@tanstack/optimistic"
 
 export function useLiveQuery<
-  TResultQueryBuilder extends QueryBuilder<Context<Schema>>,
+  TResultContext extends Context<Schema> = Context<Schema>,
 >(
-  queryFn: (q: InitialQueryBuilder<Context<Schema>>) => TResultQueryBuilder,
+  queryFn: (
+    q: InitialQueryBuilder<Context<Schema>>
+  ) => QueryBuilder<TResultContext>,
   deps: Array<unknown> = []
-): ResultFromQueryBuilder<TResultQueryBuilder> {
+): ResultsFromContext<TResultContext> {
   const compiledQuery = useMemo(() => {
     const query = queryFn(queryBuilder())
     const compiled = compileQuery(query)
@@ -30,16 +32,3 @@ export function useLiveQuery<
 
   return useStore(compiledQuery.results.derivedState)
 }
-
-import { Collection } from "@tanstack/optimistic"
-
-const collection = new Collection<{
-  id: string
-  something: string
-  age: number
-}>()
-
-useLiveQuery((q) => q
-  .from({ collection })
-  .select("@id", "@something", "@age")
-, [])

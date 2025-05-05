@@ -868,12 +868,13 @@ export function queryBuilder<TBaseSchema extends Schema = {}>() {
   }>
 }
 
-export type ResultsFromContext<TContext extends Context<Schema>> =
+export type ResultsFromContext<TContext extends Context<Schema>> = Flatten<
   TContext[`result`] extends object
     ? TContext[`result`]
     : TContext[`result`] extends undefined
       ? TContext[`schema`]
       : object
+>
 
 export type ResultFromQueryBuilder<TQueryBuilder> = Flatten<
   TQueryBuilder extends QueryBuilder<infer C>
