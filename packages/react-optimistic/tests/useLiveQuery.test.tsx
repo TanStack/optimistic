@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import mitt from "mitt"
 import { act, renderHook } from "@testing-library/react"
 import { Collection } from "@tanstack/optimistic"
+import { useEffect } from "react"
 import { useLiveQuery } from "../src/useLiveQuery"
-import type { PendingMutation } from "@tanstack/optimistic"
+import type {
+  Context,
+  InitialQueryBuilder,
+  PendingMutation,
+  Schema,
+} from "@tanstack/optimistic"
 
 type Person = {
   id: string
@@ -369,8 +375,216 @@ describe(`Query Collections`, async () => {
     // After deletion, user 3 should no longer have a joined result
     expect(result.current.get(`3`)).toBeUndefined()
   })
+
+  it(`should recompile query when parameters change and change results`, async () => {
+    const emitter = mitt()
+
+    // Create collection with mutation capability
+    const collection = new Collection<Person>({
+      id: `params-change-test`,
+      sync: {
+        sync: ({ begin, write, commit }) => {
+          // Listen for sync events
+          // @ts-expect-error don't trust Mitt's typing and this works.
+          emitter.on(`sync`, (changes: Array<PendingMutation<Person>>) => {
+            begin()
+            changes.forEach((change) => {
+              write({
+                key: change.key,
+                type: change.type,
+                value: change.changes,
+              })
+            })
+            commit()
+          })
+        },
+      },
+      mutationFn: async ({ transaction }) => {
+        emitter.emit(`sync`, transaction.mutations)
+        return Promise.resolve()
+      },
+    })
+
+    // Sync from initial state
+    act(() => {
+      emitter.emit(
+        `sync`,
+        initialPersons.map((person) => ({
+          key: person.id,
+          type: `insert`,
+          changes: person,
+        }))
+      )
+    })
+
+    const { result, rerender } = renderHook(
+      ({ minAge }: { minAge: number }) => {
+        return useLiveQuery(
+          (q) =>
+            q
+              .from({ collection })
+              .where(`@age`, `>`, minAge)
+              .keyBy(`@id`)
+              .select(`@id`, `@name`, `@age`),
+          [minAge]
+        )
+      },
+      { initialProps: { minAge: 30 } }
+    )
+
+    // Initially should return only people older than 30
+    expect(result.current.size).toBe(1)
+    expect(result.current.get(`3`)).toEqual({
+      id: `3`,
+      name: `John Smith`,
+      age: 35,
+    })
+
+    // Change the parameter to include more people
+    act(() => {
+      rerender({ minAge: 20 })
+    })
+
+    await waitForChanges()
+
+    // Now should return all people as they're all older than 20
+    expect(result.current.size).toBe(3)
+    expect(result.current.get(`1`)).toEqual({
+      id: `1`,
+      name: `John Doe`,
+      age: 30,
+    })
+    expect(result.current.get(`2`)).toEqual({
+      id: `2`,
+      name: `Jane Doe`,
+      age: 25,
+    })
+    expect(result.current.get(`3`)).toEqual({
+      id: `3`,
+      name: `John Smith`,
+      age: 35,
+    })
+
+    // Change to exclude everyone
+    act(() => {
+      rerender({ minAge: 50 })
+    })
+
+    await waitForChanges()
+
+    // Should now be empty
+    expect(result.current.size).toBe(0)
+  })
+
+  it(`should stop old query when parameters change`, async () => {
+    const emitter = mitt()
+
+    // Create collection with mutation capability
+    const collection = new Collection<Person>({
+      id: `stop-query-test`,
+      sync: {
+        sync: ({ begin, write, commit }) => {
+          // @ts-expect-error Mitt typing doesn't match our usage
+          emitter.on(`sync`, (changes: Array<PendingMutation<Person>>) => {
+            begin()
+            changes.forEach((change) => {
+              write({
+                key: change.key,
+                type: change.type,
+                value: change.changes,
+              })
+            })
+            commit()
+          })
+        },
+      },
+      mutationFn: async ({ transaction }) => {
+        emitter.emit(`sync`, transaction.mutations)
+        return Promise.resolve()
+      },
+    })
+
+    // Mock console.log to track when compiledQuery.stop() is called
+    let logCalls: Array<string> = []
+    const originalConsoleLog = console.log
+    console.log = vi.fn((...args) => {
+      logCalls.push(args.join(` `))
+      originalConsoleLog(...args)
+    })
+
+    // Add a custom hook that wraps useLiveQuery to log when queries are created and stopped
+    function useTrackedLiveQuery<T>(
+      queryFn: (q: InitialQueryBuilder<Context<Schema>>) => any,
+      deps: Array<unknown>
+    ): T {
+      console.log(`Creating new query with deps`, deps.join(`,`))
+      const result = useLiveQuery(queryFn, deps)
+
+      // Will be called during cleanup
+      useEffect(() => {
+        return () => {
+          console.log(`Stopping query with deps`, deps.join(`,`))
+        }
+      }, deps)
+
+      return result as T
+    }
+
+    // Sync initial state
+    act(() => {
+      emitter.emit(
+        `sync`,
+        initialPersons.map((person) => ({
+          key: person.id,
+          type: `insert`,
+          changes: person,
+        }))
+      )
+    })
+
+    const { rerender } = renderHook(
+      ({ minAge }: { minAge: number }) => {
+        return useTrackedLiveQuery(
+          (q) =>
+            q
+              .from({ collection })
+              .where(`@age`, `>`, minAge)
+              .keyBy(`@id`)
+              .select(`@id`, `@name`),
+          [minAge]
+        )
+      },
+      { initialProps: { minAge: 30 } }
+    )
+
+    // Initial query should be created
+    expect(
+      logCalls.some((call) => call.includes(`Creating new query with deps 30`))
+    ).toBe(true)
+
+    // Clear log calls
+    logCalls = []
+
+    // Change the parameter
+    act(() => {
+      rerender({ minAge: 25 })
+    })
+
+    await waitForChanges()
+
+    // Old query should be stopped and new query created
+    expect(
+      logCalls.some((call) => call.includes(`Stopping query with deps 30`))
+    ).toBe(true)
+    expect(
+      logCalls.some((call) => call.includes(`Creating new query with deps 25`))
+    ).toBe(true)
+
+    // Restore console.log
+    console.log = originalConsoleLog
+  })
 })
 
-async function waitForChanges(ms = 100) {
+async function waitForChanges(ms = 0) {
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
