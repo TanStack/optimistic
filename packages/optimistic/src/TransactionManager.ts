@@ -212,7 +212,7 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
         if (!tx) return
 
         // Mark as persisted
-        tx.isPersisted?.resolve(true)
+        tx.isPersisted.resolve(true)
         this.setTransactionState(transactionId, `completed`)
       })
       .catch((error) => {
@@ -226,7 +226,7 @@ export class TransactionManager<T extends object = Record<string, unknown>> {
         }
 
         // Reject the promise
-        tx.isPersisted?.reject(tx.error.error)
+        tx.isPersisted.reject(tx.error.error)
 
         // Set transaction state to failed
         this.setTransactionState(transactionId, `failed`)

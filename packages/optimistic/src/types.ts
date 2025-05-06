@@ -1,6 +1,6 @@
 import type { Collection } from "../src/collection"
-import type { Deferred } from "../src/deferred"
 import type { StandardSchemaV1 } from "@standard-schema/spec"
+import type { Transaction } from "../src/transactions"
 
 export type TransactionState = `pending` | `persisting` | `completed` | `failed`
 
@@ -19,8 +19,7 @@ export interface PendingMutation {
   syncMetadata: Record<string, unknown>
   createdAt: Date
   updatedAt: Date
-  /** The ID of the collection this mutation belongs to */
-  collectionId: string
+  collection: Collection
 }
 
 /**
@@ -29,33 +28,41 @@ export interface PendingMutation {
 export interface TransactionConfig {
   /** Unique identifier for the transaction */
   id?: string
+  /* If the transaction should autocommit after a mutate call or should commit be called explicitly */
+  autoCommit?: boolean
+  mutationFn: (params: {
+    mutations: Array<PendingMutation>
+    transaction: Transaction
+  }) => Promise<any>
   /** Custom metadata to associate with the transaction */
   metadata?: Record<string, unknown>
 }
 
-/**
- * Represents a transaction in the system
- * A transaction groups related mutations across collections
- */
-export interface Transaction {
-  id: string
-  state: TransactionState
-  createdAt: Date
-  updatedAt: Date
-  mutations: Array<PendingMutation>
-  metadata: Record<string, unknown>
-  isPersisted?: Deferred<boolean>
-  error?: {
-    transactionId?: string // For dependency failures
-    message: string
-    error: Error
-  }
-  /**
-   * Get a plain object representation of the transaction
-   * This is useful for creating clones or serializing the transaction
-   */
-  toObject: () => Omit<Transaction, `toObject`>
-}
+export type { Transaction }
+
+// /**
+//  * Represents a transaction in the system
+//  * A transaction groups related mutations across collections
+//  */
+// export interface Transaction {
+//   id: string
+//   state: TransactionState
+//   createdAt: Date
+//   updatedAt: Date
+//   mutations: Array<PendingMutation>
+//   metadata: Record<string, unknown>
+//   isPersisted?: Deferred<boolean>
+//   error?: {
+//     transactionId?: string // For dependency failures
+//     message: string
+//     error: Error
+//   }
+//   /**
+//    * Get a plain object representation of the transaction
+//    * This is useful for creating clones or serializing the transaction
+//    */
+//   toObject: () => Omit<Transaction, `toObject`>
+// }
 
 export type TransactionWithoutToObject = Omit<Transaction, `toObject`>
 

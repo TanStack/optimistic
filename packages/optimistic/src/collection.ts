@@ -1,6 +1,7 @@
 import { Derived, Store, batch } from "@tanstack/store"
 import { withArrayChangeTracking, withChangeTracking } from "./proxy"
-import { getTransactionManager } from "./TransactionManager"
+import { getActiveTransaction } from "./transactions"
+import { SortedMap } from "./SortedMap"
 import type {
   ChangeMessage,
   CollectionConfig,
@@ -144,8 +145,7 @@ export class SchemaValidationError extends Error {
 }
 
 export class Collection<T extends object = Record<string, unknown>> {
-  public transactionManager!: ReturnType<typeof getTransactionManager<T>>
-
+  public transactions: Store<SortedMap<string, Transaction>>
   public optimisticOperations: Derived<Array<OptimisticChangeMessage<T>>>
   public derivedState: Derived<Map<string, T>>
   public derivedArray: Derived<Array<T>>
@@ -185,7 +185,11 @@ export class Collection<T extends object = Record<string, unknown>> {
       throw new Error(`Collection requires a sync config`)
     }
 
-    this.transactionManager = getTransactionManager<T>(this)
+    this.transactions = new Store(
+      new SortedMap<string, Transaction>(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      )
+    )
 
     // Copies of live mutations are stored here and removed once the transaction completes.
     this.optimisticOperations = new Derived({
@@ -215,7 +219,7 @@ export class Collection<T extends object = Record<string, unknown>> {
 
         return result
       },
-      deps: [this.transactionManager.transactions],
+      deps: [this.transactions],
     })
     this.optimisticOperations.mount()
 
@@ -363,7 +367,7 @@ export class Collection<T extends object = Record<string, unknown>> {
    */
   commitPendingTransactions = () => {
     if (
-      !Array.from(this.transactions.values()).some(
+      !Array.from(this.transactions.state.values()).some(
         ({ state }) => state === `persisting`
       )
     ) {
@@ -538,6 +542,11 @@ export class Collection<T extends object = Record<string, unknown>> {
    * insert({ text: "Buy groceries" }, { key: "grocery-task" })
    */
   insert = (data: T | Array<T>, config?: InsertConfig) => {
+    const transaction = getActiveTransaction()
+    if (typeof transaction === `undefined`) {
+      throw `no transaction found when calling collection.insert`
+    }
+
     const items = Array.isArray(data) ? data : [data]
     const mutations: Array<PendingMutation> = []
 
@@ -572,13 +581,24 @@ export class Collection<T extends object = Record<string, unknown>> {
         type: `insert`,
         createdAt: new Date(),
         updatedAt: new Date(),
-        collectionId: this.config.id,
+        collection: this,
       }
 
+      // TODO make this applyMutations so it overwrites previous mutations like the
+      // current implementation does.
       mutations.push(mutation)
     })
 
-    return this.transactionManager.applyTransaction(mutations)
+    transaction.mutations.push(...mutations)
+
+    this.transactions.setState((sortedMap) => {
+      sortedMap.set(transaction.id, transaction)
+      return sortedMap
+    })
+
+    return transaction
+
+    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**
@@ -621,6 +641,12 @@ export class Collection<T extends object = Record<string, unknown>> {
     if (typeof items === `undefined`) {
       throw new Error(`The first argument to update is missing`)
     }
+
+    const transaction = getActiveTransaction()
+    if (typeof transaction === `undefined`) {
+      throw `no transaction found when calling collection.update`
+    }
+
     const isArray = Array.isArray(items)
     const itemsArray = Array.isArray(items) ? items : [items]
     const callback =
@@ -689,7 +715,7 @@ export class Collection<T extends object = Record<string, unknown>> {
           type: `update`,
           createdAt: new Date(),
           updatedAt: new Date(),
-          collectionId: this.config.id,
+          collection: this,
         }
       })
       .filter(Boolean) as Array<PendingMutation>
@@ -699,7 +725,15 @@ export class Collection<T extends object = Record<string, unknown>> {
       throw new Error(`No changes were made to any of the objects`)
     }
 
-    return this.transactionManager.applyTransaction(mutations)
+    transaction.mutations.push(...mutations)
+
+    this.transactions.setState((sortedMap) => {
+      sortedMap.set(transaction.id, transaction)
+      return sortedMap
+    })
+
+    return transaction
+    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**
@@ -721,6 +755,11 @@ export class Collection<T extends object = Record<string, unknown>> {
     items: Array<T | string> | T | string,
     config?: OperationConfig
   ) => {
+    const transaction = getActiveTransaction()
+    if (typeof transaction === `undefined`) {
+      throw `no transaction found when calling collection.delete`
+    }
+
     const itemsArray = Array.isArray(items) ? items : [items]
     const mutations: Array<PendingMutation> = []
 
@@ -756,7 +795,7 @@ export class Collection<T extends object = Record<string, unknown>> {
         type: `delete`,
         createdAt: new Date(),
         updatedAt: new Date(),
-        collectionId: this.config.id,
+        collection: this,
       }
 
       mutations.push(mutation)
@@ -770,7 +809,15 @@ export class Collection<T extends object = Record<string, unknown>> {
       }
     })
 
-    return this.transactionManager.applyTransaction(mutations)
+    transaction.mutations.push(...mutations)
+
+    this.transactions.setState((sortedMap) => {
+      sortedMap.set(transaction.id, transaction)
+      return sortedMap
+    })
+
+    return transaction
+    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**
@@ -829,15 +876,6 @@ export class Collection<T extends object = Record<string, unknown>> {
         resolve(this.toArray)
       })
     })
-  }
-
-  /**
-   * Gets the current transactions in the collection
-   *
-   * @returns A SortedMap of all transactions in the collection
-   */
-  get transactions() {
-    return this.transactionManager.transactions.state
   }
 
   /**

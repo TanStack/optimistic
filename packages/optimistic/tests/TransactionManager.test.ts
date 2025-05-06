@@ -295,7 +295,7 @@ describe(`TransactionManager`, () => {
       const mutations = [createMockMutation(`error-test-5`)]
       const transaction = errorManager.applyTransaction(mutations)
 
-      await expect(transaction.isPersisted?.promise).rejects.toThrow(
+      await expect(transaction.isPersisted.promise).rejects.toThrow(
         `Persist error`
       )
 
@@ -324,10 +324,10 @@ describe(`TransactionManager`, () => {
       const transaction = nonErrorManager.applyTransaction(mutations)
 
       // The promise should reject with a converted Error
-      await expect(transaction.isPersisted?.promise).rejects.toThrow(
+      await expect(transaction.isPersisted.promise).rejects.toThrow(
         `String error message`
       )
-      transaction.isPersisted?.promise.catch(() => {})
+      transaction.isPersisted.promise.catch(() => {})
 
       // Verify the transaction state and error handling
       expect(transaction.state).toBe(`failed`)
