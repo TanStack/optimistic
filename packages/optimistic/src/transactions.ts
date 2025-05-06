@@ -125,21 +125,19 @@ export class Transaction {
     }
 
     // Run mutationFn
-    this.mutationFn({ transaction: this, mutations: this.mutations }).then(
-      () => {
-        this.setState(`completed`)
-        const hasCalled = new Set()
-        this.mutations.forEach((mutation) => {
-          if (!hasCalled.has(mutation.collection.id)) {
-            mutation.collection.transactions.setState((state) => state)
-            mutation.collection.commitPendingTransactions()
-            hasCalled.add(mutation.collection.id)
-          }
-        })
+    this.mutationFn({ transaction: this }).then(() => {
+      this.setState(`completed`)
+      const hasCalled = new Set()
+      this.mutations.forEach((mutation) => {
+        if (!hasCalled.has(mutation.collection.id)) {
+          mutation.collection.transactions.setState((state) => state)
+          mutation.collection.commitPendingTransactions()
+          hasCalled.add(mutation.collection.id)
+        }
+      })
 
-        this.isPersisted.resolve(this)
-      }
-    )
+      this.isPersisted.resolve(this)
+    })
 
     return this
   }

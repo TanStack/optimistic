@@ -6,15 +6,18 @@ import {
 } from "@tanstack/react-optimistic"
 import { DevTools } from "./DevTools"
 import { updateConfigSchema, updateTodoSchema } from "./db/validation"
+import type { MutationFn, PendingMutation } from "@tanstack/react-optimistic"
 import type { UpdateConfig, UpdateTodo } from "./db/validation"
 import type { FormEvent } from "react"
 
-async function todoMutationFn({ transaction }) {
-  const payload = transaction.mutations.map((m) => {
-    const { collection, ...payload } = m
-    console.log({ payload })
-    return payload
-  })
+const todoMutationFn: MutationFn = async ({ transaction }) => {
+  const payload = transaction.mutations.map(
+    (m: PendingMutation<UpdateTodo>) => {
+      const { collection, ...payload } = m
+      console.log({ payload })
+      return payload
+    }
+  )
   const response = await fetch(`http://localhost:3001/api/mutations`, {
     method: `POST`,
     headers: {
@@ -31,12 +34,15 @@ async function todoMutationFn({ transaction }) {
   // Start waiting for the txid
   await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
 }
-async function configMutationFn({ transaction }) {
-  const payload = transaction.mutations.map((m) => {
-    const { collection, ...payload } = m
-    console.log({ payload })
-    return payload
-  })
+
+const configMutationFn: MutationFn = async ({ transaction }) => {
+  const payload = transaction.mutations.map(
+    (m: PendingMutation<UpdateConfig>) => {
+      const { collection, ...payload } = m
+      console.log({ payload })
+      return payload
+    }
+  )
   const response = await fetch(`http://localhost:3001/api/mutations`, {
     method: `POST`,
     headers: {

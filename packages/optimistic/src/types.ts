@@ -25,65 +25,23 @@ export interface PendingMutation<T extends object = Record<string, unknown>> {
 /**
  * Configuration options for creating a new transaction
  */
+export type MutationFnParams = {
+  transaction: Transaction
+}
+
+export type MutationFn = (params: MutationFnParams) => Promise<any>
+
 export interface TransactionConfig {
   /** Unique identifier for the transaction */
   id?: string
   /* If the transaction should autocommit after a mutate call or should commit be called explicitly */
   autoCommit?: boolean
-  mutationFn: (params: {
-    mutations: Array<PendingMutation<any>>
-    transaction: Transaction
-  }) => Promise<any>
+  mutationFn: MutationFn
   /** Custom metadata to associate with the transaction */
   metadata?: Record<string, unknown>
 }
 
 export type { Transaction }
-
-// /**
-//  * Represents a transaction in the system
-//  * A transaction groups related mutations across collections
-//  */
-// export interface Transaction {
-//   id: string
-//   state: TransactionState
-//   createdAt: Date
-//   updatedAt: Date
-//   mutations: Array<PendingMutation>
-//   metadata: Record<string, unknown>
-//   isPersisted?: Deferred<boolean>
-//   error?: {
-//     transactionId?: string // For dependency failures
-//     message: string
-//     error: Error
-//   }
-//   /**
-//    * Get a plain object representation of the transaction
-//    * This is useful for creating clones or serializing the transaction
-//    */
-//   toObject: () => Omit<Transaction, `toObject`>
-// }
-
-export type TransactionWithoutToObject = Omit<Transaction, `toObject`>
-
-/**
- * Configuration for the mutation factory
- * Used to create mutation functions that can span multiple collections
- */
-export interface MutationFactoryConfig {
-  /**
-   * Function to persist mutations to the backend
-   * Receives all mutations across all collections involved in the transaction
-   */
-  mutationFn: (params: {
-    mutations: Array<PendingMutation>
-    transaction: Transaction
-  }) => Promise<any>
-  /**
-   * Custom metadata to associate with all transactions created by this factory
-   */
-  metadata?: Record<string, unknown>
-}
 
 type Value<TExtensions = never> =
   | string
