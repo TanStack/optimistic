@@ -65,7 +65,13 @@ export class Transaction {
   public isPersisted: Deferred<Transaction>
   public autoCommit: boolean
   public createdAt: Date
-  constructor({ id, mutationFn, autoCommit = true }: TransactionConfig) {
+  public metadata: Record<string, unknown>
+  constructor({
+    id,
+    mutationFn,
+    autoCommit = true,
+    metadata = {},
+  }: TransactionConfig) {
     this.id = id!
     this.mutationFn = mutationFn
     this.state = `pending`
@@ -73,6 +79,7 @@ export class Transaction {
     this.isPersisted = createDeferred()
     this.autoCommit = autoCommit
     this.createdAt = new Date()
+    this.metadata = metadata
   }
 
   setState(newState: TransactionState) {

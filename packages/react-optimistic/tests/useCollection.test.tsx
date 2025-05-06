@@ -1,6 +1,8 @@
+import { create } from "domain"
 import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import mitt from "mitt"
+import { createTransaction } from "@tanstack/optimistic"
 import { useCollection } from "../src/useCollection"
 import type { PendingMutation } from "@tanstack/optimistic"
 
@@ -28,15 +30,15 @@ describe(`useCollection`, () => {
             })
           },
         },
-        mutationFn: ({ transaction }) => {
-          persistMock()
-          act(() => {
-            emitter.emit(`update`, transaction.mutations)
-          })
-          return Promise.resolve()
-        },
       })
     )
+    const mutationFn = ({ transaction }) => {
+      persistMock()
+      act(() => {
+        emitter.emit(`update`, transaction.mutations)
+      })
+      return Promise.resolve()
+    }
 
     // Initial state should be empty
     expect(result.current.state.size).toBe(0)
@@ -44,7 +46,10 @@ describe(`useCollection`, () => {
 
     // Test single insert with explicit key
     await act(async () => {
-      await result.current.insert({ name: `Alice` }, { key: `user1` })
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.insert({ name: `Alice` }, { key: `user1` })
+      )
     })
 
     // Verify insert
@@ -54,9 +59,12 @@ describe(`useCollection`, () => {
 
     // Test bulk insert with sparse keys
     await act(async () => {
-      await result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
-        key: [`user2`, undefined],
-      })
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.insert([{ name: `Bob` }, { name: `Charlie` }], {
+          key: [`user2`, undefined],
+        })
+      )
     })
 
     // Get the auto-generated key for Charlie
@@ -72,16 +80,16 @@ describe(`useCollection`, () => {
 
     // Test update with callback
     const updateTransaction = await act(async () => {
-      return await result.current.update(
-        result.current.state.get(`user1`)!,
-        (item) => {
+      const tx = createTransaction({ mutationFn })
+      return await tx.mutate(() =>
+        result.current.update(result.current.state.get(`user1`)!, (item) => {
           item.name = `Alice Smith`
-        }
+        })
       )
     })
 
     await act(async () => {
-      await updateTransaction.isPersisted?.promise
+      await updateTransaction.isPersisted.promise
     })
 
     // Verify update
@@ -94,18 +102,21 @@ describe(`useCollection`, () => {
         result.current.state.get(`user1`)!,
         result.current.state.get(`user2`)!,
       ]
-      return await result.current.update(
-        items,
-        { metadata: { bulkUpdate: true } },
-        (drafts) => {
-          drafts.forEach((draft, i) => {
-            if (i === 0) {
-              draft.name = draft.name + ` Jr.`
-            } else if (i === 1) {
-              draft.name = draft.name + ` Sr.`
-            }
-          })
-        }
+      const tx = createTransaction({ mutationFn })
+      return await tx.mutate(() =>
+        result.current.update(
+          items,
+          { metadata: { bulkUpdate: true } },
+          (drafts) => {
+            drafts.forEach((draft, i) => {
+              if (i === 0) {
+                draft.name = draft.name + ` Jr.`
+              } else if (i === 1) {
+                draft.name = draft.name + ` Sr.`
+              }
+            })
+          }
+        )
       )
     })
 
@@ -119,7 +130,10 @@ describe(`useCollection`, () => {
 
     // Test single delete
     await act(async () => {
-      await result.current.delete(result.current.state.get(`user1`)!)
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.delete(result.current.state.get(`user1`)!)
+      )
     })
 
     // Verify single delete
@@ -132,9 +146,12 @@ describe(`useCollection`, () => {
         result.current.state.get(`user2`)!,
         result.current.state.get(charlieKey!)!,
       ]
-      await result.current.delete(items, {
-        metadata: { reason: `bulk cleanup` },
-      })
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.delete(items, {
+          metadata: { reason: `bulk cleanup` },
+        })
+      )
     })
 
     // Verify all items are deleted
@@ -154,13 +171,6 @@ describe(`useCollection`, () => {
     const { result } = renderHook(() =>
       useCollection({
         id: `test-properties`,
-        mutationFn: ({ transaction }) => {
-          persistMock()
-          act(() => {
-            emitter.emit(`update`, transaction.mutations)
-          })
-          return Promise.resolve()
-        },
         sync: {
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (_, mutations) => {
@@ -178,6 +188,13 @@ describe(`useCollection`, () => {
         },
       })
     )
+    const mutationFn = ({ transaction }) => {
+      persistMock()
+      act(() => {
+        emitter.emit(`update`, transaction.mutations)
+      })
+      return Promise.resolve()
+    }
 
     // Initial state should be empty
     expect(result.current.state).toBeInstanceOf(Map)
@@ -187,13 +204,16 @@ describe(`useCollection`, () => {
 
     // Insert some test data
     await act(async () => {
-      await result.current.insert(
-        [
-          { id: 1, name: `Item 1` },
-          { id: 2, name: `Item 2` },
-          { id: 3, name: `Item 3` },
-        ],
-        { key: [`key1`, `key2`, `key3`] }
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.insert(
+          [
+            { id: 1, name: `Item 1` },
+            { id: 2, name: `Item 2` },
+            { id: 3, name: `Item 3` },
+          ],
+          { key: [`key1`, `key2`, `key3`] }
+        )
       )
       emitter.emit(`update`, [
         { key: `key1`, type: `insert`, changes: { id: 1, name: `Item 1` } },
@@ -223,13 +243,6 @@ describe(`useCollection`, () => {
     const { result } = renderHook(() =>
       useCollection<{ id: number; name: string }>({
         id: `test-selector`,
-        mutationFn: ({ transaction }) => {
-          persistMock()
-          act(() => {
-            emitter.emit(`update`, transaction.mutations)
-          })
-          return Promise.resolve()
-        },
         sync: {
           sync: ({ begin, write, commit }) => {
             emitter.on(`*`, (_, mutations) => {
@@ -248,6 +261,13 @@ describe(`useCollection`, () => {
         },
       })
     )
+    const mutationFn = ({ transaction }) => {
+      persistMock()
+      act(() => {
+        emitter.emit(`update`, transaction.mutations)
+      })
+      return Promise.resolve()
+    }
 
     // Initial state
     expect(result.current.state).toBeInstanceOf(Map)
@@ -257,13 +277,16 @@ describe(`useCollection`, () => {
 
     // Insert some test data
     await act(async () => {
-      await result.current.insert(
-        [
-          { id: 1, name: `Alice` },
-          { id: 2, name: `Bob` },
-          { id: 3, name: `Charlie` },
-        ],
-        { key: [`key1`, `key2`, `key3`] }
+      const tx = createTransaction({ mutationFn })
+      await tx.mutate(() =>
+        result.current.insert(
+          [
+            { id: 1, name: `Alice` },
+            { id: 2, name: `Bob` },
+            { id: 3, name: `Charlie` },
+          ],
+          { key: [`key1`, `key2`, `key3`] }
+        )
       )
       emitter.emit(`update`, [
         { key: `key1`, type: `insert`, changes: { id: 1, name: `Alice` } },
