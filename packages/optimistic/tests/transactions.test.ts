@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 import { createTransaction } from "../src/transactions"
 
 describe(`Transactions`, () => {
@@ -18,7 +18,7 @@ describe(`Transactions`, () => {
     expect(transaction.state).toBe(`completed`)
   })
   it(`thows an error if you don't pass in mutationFn`, () => {
-    // eslint-disable-next-line deliberate
+    // @ts-expect-error missing argument on purpose
     expect(() => createTransaction({})).toThrowError(
       `mutationFn is required when creating a transaction`
     )

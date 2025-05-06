@@ -61,7 +61,7 @@ export class Transaction {
   public id: string
   public state: TransactionState
   public mutationFn
-  public mutations: Array<PendingMutation>
+  public mutations: Array<PendingMutation<any>>
   public isPersisted: Deferred<Transaction>
   public autoCommit: boolean
   public createdAt: Date
@@ -102,6 +102,8 @@ export class Transaction {
     if (this.state === `completed`) {
       throw `You can no longer call .rollback() as the transaction is already completed`
     }
+
+    return this
   }
 
   commit(): Transaction {
@@ -110,32 +112,27 @@ export class Transaction {
     }
 
     this.setState(`persisting`)
-    // const hasCalled = new Set()
-    // this.mutations.forEach((mutation) => {
-    //   if (!hasCalled.has(mutation.collection.id)) {
-    //     mutation.collection.transactions.setState((state) => state)
-    //     hasCalled.add(mutation.collection.id)
-    //   }
-    // })
 
     if (this.mutations.length === 0) {
       this.setState(`completed`)
     }
 
     // Run mutationFn
-    this.mutationFn({ transaction: this }).then(() => {
-      this.setState(`completed`)
-      const hasCalled = new Set()
-      this.mutations.forEach((mutation) => {
-        if (!hasCalled.has(mutation.collection.id)) {
-          mutation.collection.transactions.setState((state) => state)
-          mutation.collection.commitPendingTransactions()
-          hasCalled.add(mutation.collection.id)
-        }
-      })
+    this.mutationFn({ transaction: this, mutations: this.mutations }).then(
+      () => {
+        this.setState(`completed`)
+        const hasCalled = new Set()
+        this.mutations.forEach((mutation) => {
+          if (!hasCalled.has(mutation.collection.id)) {
+            mutation.collection.transactions.setState((state) => state)
+            mutation.collection.commitPendingTransactions()
+            hasCalled.add(mutation.collection.id)
+          }
+        })
 
-      this.isPersisted.resolve(this)
-    })
+        this.isPersisted.resolve(this)
+      }
+    )
 
     return this
   }

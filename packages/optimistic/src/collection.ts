@@ -548,7 +548,7 @@ export class Collection<T extends object = Record<string, unknown>> {
     }
 
     const items = Array.isArray(data) ? data : [data]
-    const mutations: Array<PendingMutation> = []
+    const mutations: Array<PendingMutation<T>> = []
 
     // Handle keys - convert to array if string, or generate if not provided
     let keys: Array<string>
@@ -570,7 +570,7 @@ export class Collection<T extends object = Record<string, unknown>> {
       const validatedData = this.validateData(item, `insert`)
       const key = keys[index]!
 
-      const mutation: PendingMutation = {
+      const mutation: PendingMutation<T> = {
         mutationId: crypto.randomUUID(),
         original: {},
         modified: validatedData as Record<string, unknown>,
@@ -686,7 +686,7 @@ export class Collection<T extends object = Record<string, unknown>> {
     }
 
     // Create mutations for each object that has changes
-    const mutations: Array<PendingMutation> = keys
+    const mutations: Array<PendingMutation<T>> = keys
       .map((key, index) => {
         const changes = changesArray[index]
 
@@ -718,7 +718,7 @@ export class Collection<T extends object = Record<string, unknown>> {
           collection: this,
         }
       })
-      .filter(Boolean) as Array<PendingMutation>
+      .filter(Boolean) as Array<PendingMutation<T>>
 
     // If no changes were made, return early
     if (mutations.length === 0) {
@@ -761,7 +761,7 @@ export class Collection<T extends object = Record<string, unknown>> {
     }
 
     const itemsArray = Array.isArray(items) ? items : [items]
-    const mutations: Array<PendingMutation> = []
+    const mutations: Array<PendingMutation<T>> = []
 
     for (const item of itemsArray) {
       let key: string
@@ -781,7 +781,7 @@ export class Collection<T extends object = Record<string, unknown>> {
         )
       }
 
-      const mutation: PendingMutation = {
+      const mutation: PendingMutation<T> = {
         mutationId: crypto.randomUUID(),
         original: (this.state.get(key) || {}) as Record<string, unknown>,
         modified: { _deleted: true },

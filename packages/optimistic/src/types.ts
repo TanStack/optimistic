@@ -8,7 +8,7 @@ export type TransactionState = `pending` | `persisting` | `completed` | `failed`
  * Represents a pending mutation within a transaction
  * Contains information about the original and modified data, as well as metadata
  */
-export interface PendingMutation {
+export interface PendingMutation<T extends object = Record<string, unknown>> {
   mutationId: string
   original: Record<string, unknown>
   modified: Record<string, unknown>
@@ -19,7 +19,7 @@ export interface PendingMutation {
   syncMetadata: Record<string, unknown>
   createdAt: Date
   updatedAt: Date
-  collection: Collection
+  collection: Collection<T>
 }
 
 /**
@@ -31,7 +31,7 @@ export interface TransactionConfig {
   /* If the transaction should autocommit after a mutate call or should commit be called explicitly */
   autoCommit?: boolean
   mutationFn: (params: {
-    mutations: Array<PendingMutation>
+    mutations: Array<PendingMutation<any>>
     transaction: Transaction
   }) => Promise<any>
   /** Custom metadata to associate with the transaction */

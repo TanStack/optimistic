@@ -1,7 +1,7 @@
 // Re-export all public APIs
 export * from "./collection"
 export * from "./SortedMap"
-export * from "./TransactionManager"
+export * from "./transactions"
 export * from "./types"
 export * from "./errors"
 export * from "./utils"
