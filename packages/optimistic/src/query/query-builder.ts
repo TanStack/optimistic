@@ -534,10 +534,10 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
                     Input
                 >
               }
-            : TFrom extends InputReference<infer TFrom>
+            : TFrom extends InputReference<infer TRef>
               ? {
-                  [K in keyof TFrom & string]: RemoveIndexSignature<
-                    TFrom[keyof TFrom]
+                  [K in keyof TRef & string]: RemoveIndexSignature<
+                    TRef[keyof TRef]
                   >
                 }
               : never)
@@ -554,10 +554,10 @@ export class BaseQueryBuilder<TContext extends Context<Schema>> {
                     Input
                 >
               }
-            : TFrom extends InputReference<infer TFrom>
+            : TFrom extends InputReference<infer TRef>
               ? {
-                  [K in keyof TFrom & string]: RemoveIndexSignature<
-                    TFrom[keyof TFrom]
+                  [K in keyof TRef & string]: RemoveIndexSignature<
+                    TRef[keyof TRef]
                   >
                 }
               : never)
