@@ -9,6 +9,11 @@ import type {
   Schema,
 } from "@tanstack/optimistic"
 
+export interface UseLiveQueryReturn<T extends object> {
+  state: Map<string, T>
+  data: Array<T>
+}
+
 export function useLiveQuery<
   TResultContext extends Context<Schema> = Context<Schema>,
 >(
@@ -16,7 +21,7 @@ export function useLiveQuery<
     q: InitialQueryBuilder<Context<Schema>>
   ) => QueryBuilder<TResultContext>,
   deps: Array<unknown> = []
-): Map<string, ResultsFromContext<TResultContext>> {
+): UseLiveQueryReturn<ResultsFromContext<TResultContext>> {
   const compiledQuery = useMemo(() => {
     const query = queryFn(queryBuilder())
     const compiled = compileQuery(query)
@@ -30,5 +35,16 @@ export function useLiveQuery<
     }
   }, [compiledQuery])
 
-  return useStore(compiledQuery.results.derivedState)
+  const state = useStore(compiledQuery.results.derivedState)
+  let data: Array<ResultsFromContext<TResultContext>> | undefined
+
+  return {
+    state,
+    get data() {
+      if (!data) {
+        data = Array.from(state.values())
+      }
+      return data
+    },
+  }
 }

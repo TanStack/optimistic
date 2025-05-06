@@ -71,7 +71,7 @@ const initialIssues: Array<Issue> = [
   },
 ]
 
-describe(`Query Collections`, async () => {
+describe(`Query Collections`, () => {
   it(`should be able to query a collection`, async () => {
     const emitter = mitt()
 
@@ -123,8 +123,14 @@ describe(`Query Collections`, async () => {
       )
     })
 
-    expect(result.current.size).toBe(1)
-    expect(result.current.get(`3`)).toEqual({
+    expect(result.current.state.size).toBe(1)
+    expect(result.current.state.get(`3`)).toEqual({
+      id: `3`,
+      name: `John Smith`,
+    })
+
+    expect(result.current.data.length).toBe(1)
+    expect(result.current.data[0]).toEqual({
       id: `3`,
       name: `John Smith`,
     })
@@ -148,12 +154,22 @@ describe(`Query Collections`, async () => {
 
     await waitForChanges()
 
-    expect(result.current.size).toBe(2)
-    expect(result.current.get(`3`)).toEqual({
+    expect(result.current.state.size).toBe(2)
+    expect(result.current.state.get(`3`)).toEqual({
       id: `3`,
       name: `John Smith`,
     })
-    expect(result.current.get(`4`)).toEqual({
+    expect(result.current.state.get(`4`)).toEqual({
+      id: `4`,
+      name: `Kyle Doe`,
+    })
+
+    expect(result.current.data.length).toBe(2)
+    expect(result.current.data).toContainEqual({
+      id: `3`,
+      name: `John Smith`,
+    })
+    expect(result.current.data).toContainEqual({
       id: `4`,
       name: `Kyle Doe`,
     })
@@ -173,8 +189,14 @@ describe(`Query Collections`, async () => {
 
     await waitForChanges()
 
-    expect(result.current.size).toBe(2)
-    expect(result.current.get(`4`)).toEqual({
+    expect(result.current.state.size).toBe(2)
+    expect(result.current.state.get(`4`)).toEqual({
+      id: `4`,
+      name: `Kyle Doe 2`,
+    })
+
+    expect(result.current.data.length).toBe(2)
+    expect(result.current.data).toContainEqual({
       id: `4`,
       name: `Kyle Doe 2`,
     })
@@ -191,8 +213,14 @@ describe(`Query Collections`, async () => {
 
     await waitForChanges()
 
-    expect(result.current.size).toBe(1)
-    expect(result.current.get(`4`)).toBeUndefined()
+    expect(result.current.state.size).toBe(1)
+    expect(result.current.state.get(`4`)).toBeUndefined()
+
+    expect(result.current.data.length).toBe(1)
+    expect(result.current.data).toContainEqual({
+      id: `3`,
+      name: `John Smith`,
+    })
   })
 
   it(`should join collections and return combined results`, async () => {
@@ -293,21 +321,21 @@ describe(`Query Collections`, async () => {
     await waitForChanges()
 
     // Verify that we have the expected joined results
-    expect(result.current.size).toBe(3)
+    expect(result.current.state.size).toBe(3)
 
-    expect(result.current.get(`1`)).toEqual({
+    expect(result.current.state.get(`1`)).toEqual({
       id: `1`,
       name: `John Doe`,
       title: `Issue 1`,
     })
 
-    expect(result.current.get(`2`)).toEqual({
+    expect(result.current.state.get(`2`)).toEqual({
       id: `2`,
       name: `Jane Doe`,
       title: `Issue 2`,
     })
 
-    expect(result.current.get(`3`)).toEqual({
+    expect(result.current.state.get(`3`)).toEqual({
       id: `3`,
       name: `John Doe`,
       title: `Issue 3`,
@@ -331,8 +359,8 @@ describe(`Query Collections`, async () => {
 
     await waitForChanges()
 
-    expect(result.current.size).toBe(4)
-    expect(result.current.get(`4`)).toEqual({
+    expect(result.current.state.size).toBe(4)
+    expect(result.current.state.get(`4`)).toEqual({
       id: `4`,
       name: `Jane Doe`,
       title: `Issue 4`,
@@ -354,7 +382,7 @@ describe(`Query Collections`, async () => {
     await waitForChanges()
 
     // The updated title should be reflected in the joined results
-    expect(result.current.get(`2`)).toEqual({
+    expect(result.current.state.get(`2`)).toEqual({
       id: `2`,
       name: `Jane Doe`,
       title: `Updated Issue 2`,
@@ -373,7 +401,7 @@ describe(`Query Collections`, async () => {
     await waitForChanges()
 
     // After deletion, user 3 should no longer have a joined result
-    expect(result.current.get(`3`)).toBeUndefined()
+    expect(result.current.state.get(`3`)).toBeUndefined()
   })
 
   it(`should recompile query when parameters change and change results`, async () => {
@@ -433,8 +461,8 @@ describe(`Query Collections`, async () => {
     )
 
     // Initially should return only people older than 30
-    expect(result.current.size).toBe(1)
-    expect(result.current.get(`3`)).toEqual({
+    expect(result.current.state.size).toBe(1)
+    expect(result.current.state.get(`3`)).toEqual({
       id: `3`,
       name: `John Smith`,
       age: 35,
@@ -448,18 +476,18 @@ describe(`Query Collections`, async () => {
     await waitForChanges()
 
     // Now should return all people as they're all older than 20
-    expect(result.current.size).toBe(3)
-    expect(result.current.get(`1`)).toEqual({
+    expect(result.current.state.size).toBe(3)
+    expect(result.current.state.get(`1`)).toEqual({
       id: `1`,
       name: `John Doe`,
       age: 30,
     })
-    expect(result.current.get(`2`)).toEqual({
+    expect(result.current.state.get(`2`)).toEqual({
       id: `2`,
       name: `Jane Doe`,
       age: 25,
     })
-    expect(result.current.get(`3`)).toEqual({
+    expect(result.current.state.get(`3`)).toEqual({
       id: `3`,
       name: `John Smith`,
       age: 35,
@@ -473,7 +501,7 @@ describe(`Query Collections`, async () => {
     await waitForChanges()
 
     // Should now be empty
-    expect(result.current.size).toBe(0)
+    expect(result.current.state.size).toBe(0)
   })
 
   it(`should stop old query when parameters change`, async () => {
