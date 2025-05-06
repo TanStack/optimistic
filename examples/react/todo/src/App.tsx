@@ -1,10 +1,58 @@
 import React, { useState } from "react"
-import { createElectricSync, useCollection } from "@tanstack/react-optimistic"
+import {
+  createElectricSync,
+  createTransaction,
+  useCollection,
+} from "@tanstack/react-optimistic"
 import { DevTools } from "./DevTools"
 import { updateConfigSchema, updateTodoSchema } from "./db/validation"
 import type { UpdateConfig, UpdateTodo } from "./db/validation"
-import type { Collection } from "@tanstack/react-optimistic"
 import type { FormEvent } from "react"
+
+async function todoMutationFn({ transaction }) {
+  const payload = transaction.mutations.map((m) => {
+    const { collection, ...payload } = m
+    console.log({ payload })
+    return payload
+  })
+  const response = await fetch(`http://localhost:3001/api/mutations`, {
+    method: `POST`,
+    headers: {
+      "Content-Type": `application/json`,
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`)
+  }
+
+  const result = await response.json()
+
+  // Start waiting for the txid
+  await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
+}
+async function configMutationFn({ transaction }) {
+  const payload = transaction.mutations.map((m) => {
+    const { collection, ...payload } = m
+    console.log({ payload })
+    return payload
+  })
+  const response = await fetch(`http://localhost:3001/api/mutations`, {
+    method: `POST`,
+    headers: {
+      "Content-Type": `application/json`,
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`)
+  }
+
+  const result = await response.json()
+
+  // Start waiting for the txid
+  await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
+}
 
 export default function App() {
   const [newTodo, setNewTodo] = useState(``)
@@ -30,23 +78,6 @@ export default function App() {
       { primaryKey: [`id`] }
     ),
     schema: updateTodoSchema,
-    mutationFn: async ({ transaction, collection }) => {
-      const response = await fetch(`http://localhost:3001/api/mutations`, {
-        method: `POST`,
-        headers: {
-          "Content-Type": `application/json`,
-        },
-        body: JSON.stringify(transaction.mutations),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`)
-      }
-
-      const result = await response.json()
-
-      // Start waiting for the txid
-      await collection.config.sync.awaitTxid(result.txid)
-    },
   })
 
   const {
@@ -71,23 +102,6 @@ export default function App() {
       { primaryKey: [`id`] }
     ),
     schema: updateConfigSchema,
-    mutationFn: async ({ transaction, collection }) => {
-      const response = await fetch(`http://localhost:3001/api/mutations`, {
-        method: `POST`,
-        headers: {
-          "Content-Type": `application/json`,
-        },
-        body: JSON.stringify(transaction.mutations),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`)
-      }
-
-      const result = await response.json()
-
-      // Start waiting for the txid
-      await collection.config.sync.awaitTxid(result.txid)
-    },
   })
 
   // Define a more robust type-safe helper function to get config values
@@ -104,19 +118,23 @@ export default function App() {
   const setConfigValue = (key: string, value: string): void => {
     for (const config of configData) {
       if (config.key === key) {
-        updateConfig(config, (draft) => {
-          draft.value = value
-        })
+        createTransaction({ mutationFn: configMutationFn }).mutate(() =>
+          updateConfig(config, (draft) => {
+            draft.value = value
+          })
+        )
 
         return
       }
     }
 
     // If the config doesn't exist yet, create it
-    insertConfig({
-      key,
-      value,
-    })
+    createTransaction({ mutationFn: configMutationFn }).mutate(() =>
+      insertConfig({
+        key,
+        value,
+      })
+    )
   }
 
   const backgroundColor = getConfigValue(`backgroundColor`)
@@ -176,17 +194,23 @@ export default function App() {
     e.preventDefault()
     if (!newTodo.trim()) return
 
-    insert({
-      text: newTodo,
-      completed: false,
-    })
+    const tx = createTransaction({ mutationFn: todoMutationFn })
+    tx.mutate(() =>
+      insert({
+        text: newTodo,
+        completed: false,
+      })
+    )
     setNewTodo(``)
   }
 
   const toggleTodo = (todo: UpdateTodo) => {
-    update(todo, (draft) => {
-      draft.completed = !draft.completed
-    })
+    const tx = createTransaction({ mutationFn: todoMutationFn })
+    tx.mutate(() =>
+      update(todo, (draft) => {
+        draft.completed = !draft.completed
+      })
+    )
   }
 
   const activeTodos = todos.filter((todo) => !todo.completed)
@@ -233,13 +257,16 @@ export default function App() {
                   className="absolute left-0 w-12 h-full text-[30px] text-[#e6e6e6] hover:text-[#4d4d4d]"
                   onClick={() => {
                     const allCompleted = completedTodos.length === todos.length
-                    update(
-                      allCompleted ? completedTodos : activeTodos,
-                      (drafts) => {
-                        drafts.forEach(
-                          (draft) => (draft.completed = !allCompleted)
-                        )
-                      }
+                    const tx = createTransaction({ mutationFn: todoMutationFn })
+                    tx.mutate(() =>
+                      update(
+                        allCompleted ? completedTodos : activeTodos,
+                        (drafts) => {
+                          drafts.forEach(
+                            (draft) => (draft.completed = !allCompleted)
+                          )
+                        }
+                      )
                     )
                   }}
                 >
@@ -281,7 +308,12 @@ export default function App() {
                           {todo.text}
                         </label>
                         <button
-                          onClick={() => deleteTodo(todo)}
+                          onClick={() => {
+                            const tx = createTransaction({
+                              mutationFn: todoMutationFn,
+                            })
+                            tx.mutate(() => deleteTodo(todo))
+                          }}
                           className="hidden group-hover:block absolute right-[10px] w-[40px] h-[40px] my-auto top-0 bottom-0 text-[30px] text-[#cc9a9a] hover:text-[#af5b5e] transition-colors"
                         >
                           ×
@@ -300,7 +332,10 @@ export default function App() {
                   {completedTodos.length > 0 && (
                     <button
                       onClick={() => {
-                        deleteTodo(completedTodos)
+                        const tx = createTransaction({
+                          mutationFn: todoMutationFn,
+                        })
+                        tx.mutate(() => deleteTodo(completedTodos))
                       }}
                       className="text-inherit hover:underline"
                     >
