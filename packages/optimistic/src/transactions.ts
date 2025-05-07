@@ -195,8 +195,10 @@ export class Transaction {
         error: error instanceof Error ? error : new Error(String(error)),
       }
 
+      console.log(`after this.error`, this.error)
+
       // rollback the transaction
-      this.rollback()
+      return this.rollback()
     }
 
     return this
