@@ -183,11 +183,11 @@ const todoCollection = useCollection({
 The library includes a simple yet powerful transaction management system. Transactions are created using the `createTransaction` function:
 
 ```typescript
-const tx = createTransaction({ 
+const tx = createTransaction({
   mutationFn: async ({ transaction }) => {
     // Implement your mutation logic here
     // This function is called when the transaction is committed
-  } 
+  },
 })
 
 // Apply mutations within the transaction
@@ -243,7 +243,7 @@ function TodoList() {
         const { collection, ...payload } = m
         return payload
       })
-      
+
       const response = await fetch(`http://localhost:3001/api/mutations`, {
         method: `POST`,
         headers: {

@@ -144,7 +144,7 @@ const todosConfig = {
 // Use the collection in a component
 function TodoList() {
   const { data, insert, update, delete: deleteFn } = useCollection(todosConfig)
-  
+
   // Create a mutation for handling all todo operations
   const todoMutation = useOptimisticMutation({
     mutationFn: async ({ transaction }) => {
@@ -152,7 +152,7 @@ function TodoList() {
         const { collection, ...payload } = m
         return payload
       })
-      
+
       const response = await fetch(`http://localhost:3001/api/mutations`, {
         method: `POST`,
         headers: {
@@ -160,7 +160,7 @@ function TodoList() {
         },
         body: JSON.stringify(payload),
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`)
       }
@@ -192,7 +192,7 @@ function TodoList() {
 
   return (
     <div>
-      <button 
+      <button
         onClick={addTodo}
         disabled={todoMutation.isPending}
       >
@@ -208,7 +208,7 @@ function TodoList() {
               disabled={todoMutation.isPending}
             />
             {todo.title}
-            <button 
+            <button
               onClick={() => removeTodo(todo)}
               disabled={todoMutation.isPending}
             >

@@ -131,11 +131,11 @@ const todoCollection = createCollection({
 The library includes a simple yet powerful transaction management system. Transactions are created using the `createTransaction` function:
 
 ```typescript
-const tx = createTransaction({ 
+const tx = createTransaction({
   mutationFn: async ({ transaction }) => {
     // Implement your mutation logic here
     // This function is called when the transaction is committed
-  } 
+  },
 })
 
 // Apply mutations within the transaction
