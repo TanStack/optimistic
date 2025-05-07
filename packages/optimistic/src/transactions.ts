@@ -149,7 +149,7 @@ export class Transaction {
     return this
   }
 
-  commit(): Transaction {
+  async commit(): Transaction {
     if (this.state !== `pending`) {
       throw `You can no longer call .commit() as the transaction is no longer pending`
     }
@@ -161,30 +161,31 @@ export class Transaction {
     }
 
     // Run mutationFn
-    this.mutationFn({ transaction: this })
-      .then(() => {
-        this.setState(`completed`)
-        const hasCalled = new Set()
-        this.mutations.forEach((mutation) => {
-          if (!hasCalled.has(mutation.collection.id)) {
-            mutation.collection.transactions.setState((state) => state)
-            mutation.collection.commitPendingTransactions()
-            hasCalled.add(mutation.collection.id)
-          }
-        })
+    try {
+      await this.mutationFn({ transaction: this })
 
-        this.isPersisted.resolve(this)
-      })
-      .catch((error) => {
-        // Update transaction with error information
-        this.error = {
-          message: error instanceof Error ? error.message : String(error),
-          error: error instanceof Error ? error : new Error(String(error)),
+      this.setState(`completed`)
+      const hasCalled = new Set()
+      this.mutations.forEach((mutation) => {
+        if (!hasCalled.has(mutation.collection.id)) {
+          mutation.collection.transactions.setState((state) => state)
+          mutation.collection.commitPendingTransactions()
+          hasCalled.add(mutation.collection.id)
         }
-
-        // rollback the transaction
-        this.rollback()
       })
+
+      this.isPersisted.resolve(this)
+    } catch (error) {
+      console.error(`Caught error:`, error) // Add this to confirm error capture
+      // Update transaction with error information
+      this.error = {
+        message: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+      }
+
+      // rollback the transaction
+      this.rollback()
+    }
 
     return this
   }
