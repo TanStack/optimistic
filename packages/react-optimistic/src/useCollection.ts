@@ -2,14 +2,12 @@ import { useSyncExternalStoreWithSelector } from "use-sync-external-store/shim/w
 import {
   Collection,
   collectionsStore,
-  createTransaction,
   preloadCollection,
 } from "@tanstack/optimistic"
 import type {
   CollectionConfig,
   SortedMap,
   Transaction,
-  TransactionConfig,
 } from "@tanstack/optimistic"
 
 export { preloadCollection }
@@ -411,17 +409,4 @@ export function shallow<T>(objA: T, objB: T) {
     }
   }
   return true
-}
-
-export function useOptimisticMutation(config: TransactionConfig) {
-  return {
-    mutate: (callback: () => {}) => {
-      const transaction = createTransaction(config)
-      transaction.mutate(callback)
-      return transaction
-    },
-    createTransaction: () => {
-      return createTransaction({ ...config, autoCommit: false })
-    },
-  }
 }

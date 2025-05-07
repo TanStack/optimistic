@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import mitt from "mitt"
 import { createTransaction } from "@tanstack/optimistic"
-import { useCollection, useOptimisticMutation } from "../src/useCollection"
+import { useCollection } from "../src/useCollection"
+import { useOptimisticMutation } from "../src/useOptimisticMutation"
 import type { MutationFn, PendingMutation } from "@tanstack/optimistic"
 
 describe(`useCollection`, () => {
