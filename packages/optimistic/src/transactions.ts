@@ -130,9 +130,6 @@ export class Transaction {
 
     this.setState(`failed`)
 
-    // Reject the promise
-    this.isPersisted.reject(this.error?.error)
-
     // See if there's any other transactions w/ mutations on the same keys
     // and roll them back as well.
     if (!isSecondaryRollback) {
@@ -146,7 +143,25 @@ export class Transaction {
       )
     }
 
+    // Reject the promise
+    this.isPersisted.reject(this.error?.error)
+
+    this.touchCollection()
+
     return this
+  }
+
+  // Tell collection that something has changed with the transaction
+  touchCollection(): void {
+    this.setState(`completed`)
+    const hasCalled = new Set()
+    this.mutations.forEach((mutation) => {
+      if (!hasCalled.has(mutation.collection.id)) {
+        mutation.collection.transactions.setState((state) => state)
+        mutation.collection.commitPendingTransactions()
+        hasCalled.add(mutation.collection.id)
+      }
+    })
   }
 
   async commit(): Promise<Transaction> {
@@ -164,15 +179,7 @@ export class Transaction {
     try {
       await this.mutationFn({ transaction: this })
 
-      this.setState(`completed`)
-      const hasCalled = new Set()
-      this.mutations.forEach((mutation) => {
-        if (!hasCalled.has(mutation.collection.id)) {
-          mutation.collection.transactions.setState((state) => state)
-          mutation.collection.commitPendingTransactions()
-          hasCalled.add(mutation.collection.id)
-        }
-      })
+      this.touchCollection()
 
       this.isPersisted.resolve(this)
     } catch (error) {
