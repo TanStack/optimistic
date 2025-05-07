@@ -270,6 +270,37 @@ describe(`Collection`, () => {
 
     await tx5.isPersisted.promise
 
+    // If there are two updates, the second should overwrite the first.
+    const tx55 = createTransaction({ mutationFn })
+    // Test update with config and callback
+    tx55.mutate(() => {
+      collection.update(
+        collection.state.get(insertedKey)!,
+        { metadata: { updated: true } },
+        (item) => {
+          item.value = `bar3.1`
+          item.newProp = `new value.1`
+        }
+      )
+      collection.update(
+        collection.state.get(insertedKey)!,
+        { metadata: { updated: true } },
+        (item) => {
+          item.value = `bar3`
+          item.newProp = `new value`
+        }
+      )
+    })
+
+    // The merged value should contain the update
+    expect(collection.state.get(insertedKey)).toEqual({
+      value: `bar3`,
+      newProp: `new value`,
+    })
+    expect(tx55.mutations).toHaveLength(1)
+
+    await tx55.isPersisted.promise
+
     const tx6 = createTransaction({ mutationFn })
     // Test bulk update
     const items = [

@@ -584,12 +584,10 @@ export class Collection<T extends object = Record<string, unknown>> {
         collection: this,
       }
 
-      // TODO make this applyMutations so it overwrites previous mutations like the
-      // current implementation does.
       mutations.push(mutation)
     })
 
-    transaction.mutations.push(...mutations)
+    transaction.applyMutations(mutations)
 
     this.transactions.setState((sortedMap) => {
       sortedMap.set(transaction.id, transaction)
@@ -597,8 +595,6 @@ export class Collection<T extends object = Record<string, unknown>> {
     })
 
     return transaction
-
-    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**
@@ -725,7 +721,7 @@ export class Collection<T extends object = Record<string, unknown>> {
       throw new Error(`No changes were made to any of the objects`)
     }
 
-    transaction.mutations.push(...mutations)
+    transaction.applyMutations(mutations)
 
     this.transactions.setState((sortedMap) => {
       sortedMap.set(transaction.id, transaction)
@@ -733,7 +729,6 @@ export class Collection<T extends object = Record<string, unknown>> {
     })
 
     return transaction
-    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**
@@ -809,7 +804,7 @@ export class Collection<T extends object = Record<string, unknown>> {
       }
     })
 
-    transaction.mutations.push(...mutations)
+    transaction.applyMutations(mutations)
 
     this.transactions.setState((sortedMap) => {
       sortedMap.set(transaction.id, transaction)
@@ -817,7 +812,6 @@ export class Collection<T extends object = Record<string, unknown>> {
     })
 
     return transaction
-    // return this.transactionManager.applyTransaction(mutations)
   }
 
   /**

@@ -105,6 +105,22 @@ export class Transaction {
     return this
   }
 
+  applyMutations(mutations: Array<PendingMutation<any>>): void {
+    for (const newMutation of mutations) {
+      const existingIndex = this.mutations.findIndex(
+        (m) => m.key === newMutation.key
+      )
+
+      if (existingIndex >= 0) {
+        // Replace existing mutation
+        this.mutations[existingIndex] = newMutation
+      } else {
+        // Insert new mutation
+        this.mutations.push(newMutation)
+      }
+    }
+  }
+
   rollback(): Transaction {
     if (this.state === `completed`) {
       throw `You can no longer call .rollback() as the transaction is already completed`
