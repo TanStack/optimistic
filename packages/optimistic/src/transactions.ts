@@ -23,6 +23,8 @@ function generateUUID() {
   })
 }
 
+const transactions: Array<Transaction> = []
+
 export function createTransaction(config: TransactionConfig): Transaction {
   if (typeof config.mutationFn === `undefined`) {
     throw `mutationFn is required when creating a transaction`
@@ -32,7 +34,10 @@ export function createTransaction(config: TransactionConfig): Transaction {
   if (!transactionId) {
     transactionId = generateUUID()
   }
-  return new Transaction({ ...config, id: transactionId })
+  const newTransaction = new Transaction({ ...config, id: transactionId })
+  transactions.push(newTransaction)
+
+  return newTransaction
 }
 
 let transactionStack: Array<Transaction> = []
@@ -112,9 +117,25 @@ export class Transaction {
     }
   }
 
-  rollback(): Transaction {
+  rollback(config?: { isSecondaryRollback?: boolean }): Transaction {
+    const isSecondaryRollback = config?.isSecondaryRollback ?? false
     if (this.state === `completed`) {
       throw `You can no longer call .rollback() as the transaction is already completed`
+    }
+
+    this.setState(`failed`)
+
+    // See if there's any other transactions w/ mutations on the same keys
+    // and roll them back as well.
+    if (!isSecondaryRollback) {
+      const mutationKeys = new Set()
+      this.mutations.forEach((m) => mutationKeys.add(m.key))
+      transactions.forEach(
+        (t) =>
+          t.state === `pending` &&
+          t.mutations.some((m) => mutationKeys.has(m.key)) &&
+          t.rollback({ isSecondaryRollback: true })
+      )
     }
 
     return this

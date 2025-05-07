@@ -47,7 +47,6 @@ describe(`Transactions`, () => {
     const transaction = createTransaction({
       mutationFn: async () => Promise.resolve(),
       autoCommit: false,
-      metadata: { foo: true },
     })
     const collection = new Collection<{ value: string; newProp?: string }>({
       id: `foo`,
@@ -71,7 +70,6 @@ describe(`Transactions`, () => {
     const transaction = createTransaction({
       mutationFn: async () => Promise.resolve(),
       autoCommit: false,
-      metadata: { foo: true },
     })
     const collection1 = new Collection<{ value: string; newProp?: string }>({
       id: `foo`,
@@ -94,5 +92,74 @@ describe(`Transactions`, () => {
     expect(transaction.mutations).toHaveLength(2)
 
     transaction.commit()
+  })
+  it(`should allow devs to roll back manual transactions`, () => {
+    const transaction = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+    })
+    const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction.mutate(() => {
+      collection.insert({ value: `foo-me`, newProp: `something something` })
+    })
+
+    transaction.rollback()
+
+    expect(transaction.state).toBe(`failed`)
+  })
+  it(`should, when rolling back, find any other pending transactions w/ overlapping mutations and roll them back as well`, async () => {
+    const transaction1 = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+    })
+    const transaction2 = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+    })
+    const transaction3 = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+    })
+    const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction1.mutate(() => {
+      collection.insert({ value: `foo-me`, newProp: `something something` })
+    })
+
+    transaction2.mutate(() => {
+      collection.state.forEach((object) => {
+        collection.update(object, (draft) => {
+          draft.value = `foo-me-2`
+        })
+      })
+    })
+
+    transaction2.commit()
+    await transaction2.isPersisted.promise
+
+    transaction3.mutate(() => {
+      collection.state.forEach((object) => {
+        collection.update(object, (draft) => {
+          draft.value = `foo-me-3`
+        })
+      })
+    })
+
+    transaction1.rollback()
+
+    expect(transaction1.state).toBe(`failed`)
+    expect(transaction2.state).toBe(`completed`)
+    expect(transaction3.state).toBe(`failed`)
   })
 })
