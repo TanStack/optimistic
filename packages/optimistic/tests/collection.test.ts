@@ -5,6 +5,7 @@ import { Collection, SchemaValidationError } from "../src/collection"
 import { createTransaction } from "../src/transactions"
 import type {
   ChangeMessage,
+  MutationFn,
   OptimisticChangeMessage,
   PendingMutation,
 } from "../src/types"
@@ -129,7 +130,7 @@ describe(`Collection`, () => {
       },
     })
 
-    const mutationFn = ({ transaction }) => {
+    const mutationFn: MutationFn = ({ transaction }) => {
       // Redact time-based and random fields
       const redactedTransaction = {
         ...transaction,
@@ -252,7 +253,7 @@ describe(`Collection`, () => {
     // Test update with config and callback
     tx5.mutate(() =>
       collection.update(
-        collection.state.get(insertedKey),
+        collection.state.get(insertedKey)!,
         { metadata: { updated: true } },
         (item) => {
           item.value = `bar3`
@@ -303,7 +304,7 @@ describe(`Collection`, () => {
     // Test delete with metadata
     const tx8 = createTransaction({ mutationFn })
     tx8.mutate(() =>
-      collection.delete(collection.state.get(`custom-key`), {
+      collection.delete(collection.state.get(`custom-key`)!, {
         metadata: { reason: `test` },
       })
     )
@@ -352,7 +353,7 @@ describe(`Collection`, () => {
       },
     })
 
-    const mutationFn = ({ transaction }) => {
+    const mutationFn: MutationFn = ({ transaction }) => {
       // Sync something and check that that it isn't applied because
       // we're still in the middle of persisting a transaction.
       emitter.emit(`update`, [
@@ -491,8 +492,8 @@ describe(`Collection`, () => {
     )
 
     // Should throw when trying to delete an invalid type
-    // @ts-expect-error testing error handling with invalid type
     const tx3 = createTransaction({ mutationFn })
+    // @ts-expect-error testing error handling with invalid type
     expect(() => tx3.mutate(() => collection.delete(123))).toThrow(
       `Invalid item type for delete - must be an object or string key`
     )
@@ -574,7 +575,7 @@ describe(`Collection with schema validation`, () => {
     // Partial updates should work with valid data
     const tx3 = createTransaction({ mutationFn })
     tx3.mutate(() =>
-      collection.update(collection.state.get(`user1`), (draft) => {
+      collection.update(collection.state.get(`user1`)!, (draft) => {
         draft.age = 31
       })
     )
@@ -583,7 +584,7 @@ describe(`Collection with schema validation`, () => {
     try {
       const tx4 = createTransaction({ mutationFn })
       tx4.mutate(() =>
-        collection.update(collection.state.get(`user1`), (draft) => {
+        collection.update(collection.state.get(`user1`)!, (draft) => {
           draft.age = -1
         })
       )
