@@ -67,4 +67,32 @@ describe(`Transactions`, () => {
 
     transaction.commit()
   })
+  it(`should allow mutating multiple collections`, () => {
+    const transaction = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+      metadata: { foo: true },
+    })
+    const collection1 = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+    const collection2 = new Collection<{ value: string; newProp?: string }>({
+      id: `foo2`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction.mutate(() => {
+      collection1.insert({ value: `foo-me`, newProp: `something something` })
+      collection2.insert({ value: `foo-me`, newProp: `something something` })
+    })
+
+    expect(transaction.mutations).toHaveLength(2)
+
+    transaction.commit()
+  })
 })

@@ -473,8 +473,8 @@ describe(`Collection`, () => {
     expect(keys[2]).toBe(`key3`)
 
     // Verify auto-generated keys for undefined positions
-    expect(keys[1]).toHaveLength(6)
-    expect(keys[3]).toHaveLength(6)
+    expect(keys[1]).toHaveLength(43)
+    expect(keys[3]).toHaveLength(43)
 
     // Verify all items were inserted with correct values
     // @ts-expect-error possibly undefined is ok in test

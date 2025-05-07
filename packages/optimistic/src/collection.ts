@@ -519,7 +519,7 @@ export class Collection<T extends object = Record<string, unknown>> {
       h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
     }
 
-    return Math.abs(h).toString(36)
+    return `${this.id}/${Math.abs(h).toString(36)}`
   }
 
   /**
