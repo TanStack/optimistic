@@ -100,7 +100,7 @@ export class Transaction {
     }
 
     if (this.autoCommit) {
-      return this.commit()
+      this.commit()
     }
 
     return this
@@ -149,7 +149,7 @@ export class Transaction {
     return this
   }
 
-  async commit(): Transaction {
+  async commit(): Promise<Transaction> {
     if (this.state !== `pending`) {
       throw `You can no longer call .commit() as the transaction is no longer pending`
     }
