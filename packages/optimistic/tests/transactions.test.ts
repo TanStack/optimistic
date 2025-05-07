@@ -111,7 +111,62 @@ describe(`Transactions`, () => {
 
     transaction.rollback()
 
+    transaction.isPersisted.promise.catch(() => {})
     expect(transaction.state).toBe(`failed`)
+  })
+  it(`should rollback if the mutationFn throws an error`, async () => {
+    const transaction = createTransaction({
+      mutationFn: async () => {
+        await Promise.resolve()
+        throw new Error(`bad`)
+      },
+      autoCommit: false,
+    })
+    const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction.mutate(() => {
+      collection.insert({ value: `foo-me`, newProp: `something something` })
+    })
+
+    transaction.commit()
+
+    await expect(transaction.isPersisted.promise).rejects.toThrow(`bad`)
+    transaction.isPersisted.promise.catch(() => {})
+    expect(transaction.state).toBe(`failed`)
+    expect(transaction.error?.message).toBe(`bad`)
+    expect(transaction.error?.error).toBeInstanceOf(Error)
+  })
+  it(`should handle string errors as well`, async () => {
+    const transaction = createTransaction({
+      mutationFn: async () => {
+        await Promise.resolve()
+        throw `bad`
+      },
+      autoCommit: false,
+    })
+    const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction.mutate(() => {
+      collection.insert({ value: `foo-me`, newProp: `something something` })
+    })
+
+    transaction.commit()
+
+    await expect(transaction.isPersisted.promise).rejects.toThrow(`bad`)
+    transaction.isPersisted.promise.catch(() => {})
+    expect(transaction.state).toBe(`failed`)
+    expect(transaction.error?.message).toBe(`bad`)
+    expect(transaction.error?.error).toBeInstanceOf(Error)
   })
   it(`should, when rolling back, find any other pending transactions w/ overlapping mutations and roll them back as well`, async () => {
     const transaction1 = createTransaction({
@@ -157,6 +212,8 @@ describe(`Transactions`, () => {
     })
 
     transaction1.rollback()
+    transaction1.isPersisted.promise.catch(() => {})
+    transaction3.isPersisted.promise.catch(() => {})
 
     expect(transaction1.state).toBe(`failed`)
     expect(transaction2.state).toBe(`completed`)

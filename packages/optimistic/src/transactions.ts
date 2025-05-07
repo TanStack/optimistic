@@ -67,6 +67,11 @@ export class Transaction {
   public autoCommit: boolean
   public createdAt: Date
   public metadata: Record<string, unknown>
+  public error?: {
+    message: string
+    error: Error
+  }
+
   constructor(config: TransactionConfig) {
     this.id = config.id!
     this.mutationFn = config.mutationFn
@@ -125,6 +130,9 @@ export class Transaction {
 
     this.setState(`failed`)
 
+    // Reject the promise
+    this.isPersisted.reject(this.error?.error)
+
     // See if there's any other transactions w/ mutations on the same keys
     // and roll them back as well.
     if (!isSecondaryRollback) {
@@ -153,19 +161,30 @@ export class Transaction {
     }
 
     // Run mutationFn
-    this.mutationFn({ transaction: this }).then(() => {
-      this.setState(`completed`)
-      const hasCalled = new Set()
-      this.mutations.forEach((mutation) => {
-        if (!hasCalled.has(mutation.collection.id)) {
-          mutation.collection.transactions.setState((state) => state)
-          mutation.collection.commitPendingTransactions()
-          hasCalled.add(mutation.collection.id)
-        }
-      })
+    this.mutationFn({ transaction: this })
+      .then(() => {
+        this.setState(`completed`)
+        const hasCalled = new Set()
+        this.mutations.forEach((mutation) => {
+          if (!hasCalled.has(mutation.collection.id)) {
+            mutation.collection.transactions.setState((state) => state)
+            mutation.collection.commitPendingTransactions()
+            hasCalled.add(mutation.collection.id)
+          }
+        })
 
-      this.isPersisted.resolve(this)
-    })
+        this.isPersisted.resolve(this)
+      })
+      .catch((error) => {
+        // Update transaction with error information
+        this.error = {
+          message: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+        }
+
+        // rollback the transaction
+        this.rollback()
+      })
 
     return this
   }
