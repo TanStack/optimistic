@@ -1,6 +1,6 @@
-import type { Collection } from "../src/collection"
+import type { Collection } from "./collection"
 import type { StandardSchemaV1 } from "@standard-schema/spec"
-import type { Transaction } from "../src/transactions"
+import type { Transaction } from "./transactions"
 
 export type TransactionState = `pending` | `persisting` | `completed` | `failed`
 
