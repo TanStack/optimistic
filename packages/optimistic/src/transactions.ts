@@ -23,20 +23,16 @@ function generateUUID() {
   })
 }
 
-export function createTransaction({
-  id,
-  mutationFn,
-  metadata,
-}: TransactionConfig): Transaction {
-  if (typeof mutationFn === `undefined`) {
+export function createTransaction(config: TransactionConfig): Transaction {
+  if (typeof config.mutationFn === `undefined`) {
     throw `mutationFn is required when creating a transaction`
   }
 
-  let transactionId = id
+  let transactionId = config.id
   if (!transactionId) {
     transactionId = generateUUID()
   }
-  return new Transaction({ id: transactionId, mutationFn, metadata })
+  return new Transaction({ ...config, id: transactionId })
 }
 
 let transactionStack: Array<Transaction> = []
@@ -66,20 +62,15 @@ export class Transaction {
   public autoCommit: boolean
   public createdAt: Date
   public metadata: Record<string, unknown>
-  constructor({
-    id,
-    mutationFn,
-    autoCommit = true,
-    metadata = {},
-  }: TransactionConfig) {
-    this.id = id!
-    this.mutationFn = mutationFn
+  constructor(config: TransactionConfig) {
+    this.id = config.id!
+    this.mutationFn = config.mutationFn
     this.state = `pending`
     this.mutations = []
     this.isPersisted = createDeferred()
-    this.autoCommit = autoCommit
+    this.autoCommit = config.autoCommit ?? true
     this.createdAt = new Date()
-    this.metadata = metadata
+    this.metadata = config.metadata ?? {}
   }
 
   setState(newState: TransactionState) {

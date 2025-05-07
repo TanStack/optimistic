@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest"
 import { createTransaction } from "../src/transactions"
+import { Collection } from "../src/collection"
 
 describe(`Transactions`, () => {
   it(`calling createTransaction creates a transaction`, () => {
     const transaction = createTransaction({
       mutationFn: async () => Promise.resolve(),
+      metadata: { foo: true },
     })
 
     expect(transaction.commit).toBeTruthy()
+    expect(transaction.metadata.foo).toBeTruthy()
   })
   it(`goes straight to completed if you call commit w/o any mutations`, () => {
     const transaction = createTransaction({
@@ -39,5 +42,29 @@ describe(`Transactions`, () => {
     expect(() => transaction.mutate(() => {})).toThrowError(
       `You can no longer call .mutate() as the transaction is no longer pending`
     )
+  })
+  it(`should allow manually controlling the transaction lifecycle`, () => {
+    const transaction = createTransaction({
+      mutationFn: async () => Promise.resolve(),
+      autoCommit: false,
+      metadata: { foo: true },
+    })
+    const collection = new Collection<{ value: string; newProp?: string }>({
+      id: `foo`,
+      sync: {
+        sync: () => {},
+      },
+    })
+
+    transaction.mutate(() => {
+      collection.insert({ value: `foo-me`, newProp: `something something` })
+    })
+    transaction.mutate(() => {
+      collection.insert({ value: `foo-me2`, newProp: `something something2` })
+    })
+
+    expect(transaction.mutations).toHaveLength(2)
+
+    transaction.commit()
   })
 })
