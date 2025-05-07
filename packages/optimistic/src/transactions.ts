@@ -128,6 +128,7 @@ export class Transaction {
       throw `You can no longer call .rollback() as the transaction is already completed`
     }
 
+    console.log(`set state to failed`, this)
     this.setState(`failed`)
 
     // See if there's any other transactions w/ mutations on the same keys
@@ -146,7 +147,10 @@ export class Transaction {
     // Reject the promise
     this.isPersisted.reject(this.error?.error)
 
+    console.log(`touching collection`, this)
     this.touchCollection()
+
+    console.log(`done rolling back`)
 
     return this
   }
@@ -184,6 +188,7 @@ export class Transaction {
       this.isPersisted.resolve(this)
     } catch (error) {
       console.error(`Caught error:`, error) // Add this to confirm error capture
+
       // Update transaction with error information
       this.error = {
         message: error instanceof Error ? error.message : String(error),
