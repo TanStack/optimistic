@@ -13,9 +13,8 @@ import type { FormEvent } from "react"
 const todoMutationFn: MutationFn = async ({ transaction }) => {
   const payload = transaction.mutations.map(
     (m: PendingMutation<UpdateTodo>) => {
-      const { collection, ...payload } = m
-      console.log({ payload })
-      return payload
+      const { collection, ...rest } = m
+      return rest
     }
   )
   const response = await fetch(`http://localhost:3001/api/mutations`, {
@@ -38,9 +37,8 @@ const todoMutationFn: MutationFn = async ({ transaction }) => {
 const configMutationFn: MutationFn = async ({ transaction }) => {
   const payload = transaction.mutations.map(
     (m: PendingMutation<UpdateConfig>) => {
-      const { collection, ...payload } = m
-      console.log({ payload })
-      return payload
+      const { collection, ...rest } = m
+      return rest
     }
   )
   const response = await fetch(`http://localhost:3001/api/mutations`, {
