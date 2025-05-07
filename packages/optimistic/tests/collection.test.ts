@@ -15,54 +15,47 @@ describe(`Collection`, () => {
     expect(() => new Collection()).toThrow(`Collection requires a sync config`)
   })
 
-  // Test perhaps this throws if you try to use a collection operation outside of a transaction?
-  // it(`should throw an error when trying to use mutation operations without a mutationFn`, async () => {
-  //   // Create a collection with sync but no mutationFn
-  //   const collection = new Collection<{ value: string }>({
-  //     id: `no-mutation-fn`,
-  //     sync: {
-  //       sync: ({ begin, write, commit }) => {
-  //         // Immediately execute the sync cycle
-  //         begin()
-  //         write({
-  //           type: `insert`,
-  //           key: `initial`,
-  //           value: { value: `initial value` },
-  //         })
-  //         commit()
-  //       },
-  //     },
-  //   })
-  //
-  //   // Wait for the collection to be ready
-  //   await collection.stateWhenReady()
-  //
-  //   // Verify initial state
-  //   expect(collection.state.get(`initial`)).toEqual({ value: `initial value` })
-  //
-  //   // Verify that insert throws an error
-  //   expect(() => {
-  //     collection.insert({ value: `new value` }, { key: `new-key` })
-  //   }).toThrow(
-  //     `Cannot use mutation operators without providing a mutationFn in the collection config`
-  //   )
-  //
-  //   // Verify that update throws an error
-  //   expect(() => {
-  //     collection.update(collection.state.get(`initial`)!, (draft) => {
-  //       draft.value = `updated value`
-  //     })
-  //   }).toThrow(
-  //     `Cannot use mutation operators without providing a mutationFn in the collection config`
-  //   )
-  //
-  //   // Verify that delete throws an error
-  //   expect(() => {
-  //     collection.delete(`initial`)
-  //   }).toThrow(
-  //     `Cannot use mutation operators without providing a mutationFn in the collection config`
-  //   )
-  // })
+  it(`should throw an error when trying to use mutation operations outside of a transaction`, async () => {
+    // Create a collection with sync but no mutationFn
+    const collection = new Collection<{ value: string }>({
+      id: `foo`,
+      sync: {
+        sync: ({ begin, write, commit }) => {
+          // Immediately execute the sync cycle
+          begin()
+          write({
+            type: `insert`,
+            key: `initial`,
+            value: { value: `initial value` },
+          })
+          commit()
+        },
+      },
+    })
+
+    // Wait for the collection to be ready
+    await collection.stateWhenReady()
+
+    // Verify initial state
+    expect(collection.state.get(`initial`)).toEqual({ value: `initial value` })
+
+    // Verify that insert throws an error
+    expect(() => {
+      collection.insert({ value: `new value` }, { key: `new-key` })
+    }).toThrow(`no transaction found when calling collection.insert`)
+
+    // Verify that update throws an error
+    expect(() => {
+      collection.update(collection.state.get(`initial`)!, (draft) => {
+        draft.value = `updated value`
+      })
+    }).toThrow(`no transaction found when calling collection.update`)
+
+    // Verify that delete throws an error
+    expect(() => {
+      collection.delete(`initial`)
+    }).toThrow(`no transaction found when calling collection.delete`)
+  })
 
   it(`It shouldn't expose any state until the initial sync is finished`, () => {
     // Create a collection with a mock sync plugin
