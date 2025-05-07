@@ -26,14 +26,14 @@ describe(`Transactions`, () => {
       `mutationFn is required when creating a transaction`
     )
   })
-  it(`thows an error if call mutate or commit or rollback when it's completed`, () => {
+  it(`thows an error if call mutate or commit or rollback when it's completed`, async () => {
     const transaction = createTransaction({
       mutationFn: async () => Promise.resolve(),
     })
 
-    transaction.commit()
+    await transaction.commit()
 
-    expect(() => transaction.commit()).toThrowError(
+    await expect(transaction.commit()).rejects.toThrowError(
       `You can no longer call .commit() as the transaction is no longer pending`
     )
     expect(() => transaction.rollback()).toThrowError(

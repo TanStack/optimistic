@@ -153,7 +153,6 @@ export class Transaction {
 
   // Tell collection that something has changed with the transaction
   touchCollection(): void {
-    this.setState(`completed`)
     const hasCalled = new Set()
     this.mutations.forEach((mutation) => {
       if (!hasCalled.has(mutation.collection.id)) {
@@ -179,6 +178,7 @@ export class Transaction {
     try {
       await this.mutationFn({ transaction: this })
 
+      this.setState(`completed`)
       this.touchCollection()
 
       this.isPersisted.resolve(this)
