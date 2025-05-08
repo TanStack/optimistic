@@ -81,7 +81,9 @@ const todoCollection = new Collection<UpdateTodo>({
 export default function App() {
   const [newTodo, setNewTodo] = useState(``)
 
-  const result = useLiveQuery((q) => q.from({ todoCollection }).select([`@id`]))
+  const result = useLiveQuery((q) =>
+    q.from({ todoCollection }).keyBy(`@id`).select(`@id`)
+  )
   console.log({ result })
 
   const todos = []
@@ -211,6 +213,7 @@ export default function App() {
       todoCollection.insert({
         text: newTodo,
         completed: false,
+        id: Math.round(Math.random() * 1000000),
       })
     )
     setNewTodo(``)
