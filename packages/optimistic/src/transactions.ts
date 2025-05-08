@@ -189,10 +189,34 @@ export class Transaction {
     } catch (error) {
       console.error(`Caught error:`, error) // Add this to confirm error capture
 
-      // Update transaction with error information
-      this.error = {
-        message: error instanceof Error ? error.message : String(error),
-        error: error instanceof Error ? error : new Error(String(error)),
+      console.log(`DEBUG: Value of 'this' is:`, this)
+
+      console.log(
+        `DEBUG: Type of 'error' is:`,
+        typeof error,
+        `Is instanceof Error?`,
+        error instanceof Error
+      )
+      if (error && typeof error === `object` && !(error instanceof Error)) {
+        console.log(
+          `DEBUG: 'error' is an object but not an Error instance. Keys:`,
+          Object.keys(error)
+        )
+      }
+
+      try {
+        // Update transaction with error information
+        this.error = {
+          message: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error : new Error(String(error)),
+        }
+      } catch (assignmentError) {
+        console.error(`!!! FAILED TO ASSIGN 'this.error' !!!`)
+        console.error(`Assignment error was:`, assignmentError)
+        console.error(`Original error object was:`, error)
+        console.error(`Value of 'this' during assignment error:`, this)
+        // You might want to re-throw or handle this critical failure differently
+        // For now, just logging it helps immensely.
       }
 
       console.log(`after this.error`, this.error)
