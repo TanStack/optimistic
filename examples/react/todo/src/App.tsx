@@ -332,7 +332,13 @@ export default function App() {
                             const tx = createTransaction({
                               mutationFn: todoMutationFn,
                             })
-                            tx.mutate(() => todoCollection.delete(todo))
+                            tx.mutate(() =>
+                              todoCollection.delete(
+                                Array.from(todoCollection.state.values()).find(
+                                  (t) => t.id === todo.id
+                                )!
+                              )
+                            )
                           }}
                           className="hidden group-hover:block absolute right-[10px] w-[40px] h-[40px] my-auto top-0 bottom-0 text-[30px] text-[#cc9a9a] hover:text-[#af5b5e] transition-colors"
                         >
