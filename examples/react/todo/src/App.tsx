@@ -1,8 +1,10 @@
 import React, { useState } from "react"
 import {
+  Collection,
   createElectricSync,
   createTransaction,
   useCollection,
+  useLiveQuery,
 } from "@tanstack/react-optimistic"
 import { DevTools } from "./DevTools"
 import { updateConfigSchema, updateTodoSchema } from "./db/validation"
@@ -31,7 +33,7 @@ const todoMutationFn: MutationFn = async ({ transaction }) => {
   const result = await response.json()
 
   // Start waiting for the txid
-  await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
+  await transaction.mutations[0]!.collection.config.sync.awaitTxid(result.txid)
 }
 
 const configMutationFn: MutationFn = async ({ transaction }) => {
@@ -58,31 +60,37 @@ const configMutationFn: MutationFn = async ({ transaction }) => {
   await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
 }
 
+const todoCollection = new Collection<UpdateTodo>({
+  id: `todos`,
+  sync: createElectricSync(
+    {
+      url: `http://localhost:3003/v1/shape`,
+      params: {
+        table: `todos`,
+      },
+      parser: {
+        // Parse timestamp columns into JavaScript Date objects
+        timestamptz: (date: string) => new Date(date),
+      },
+    },
+    { primaryKey: [`id`] }
+  ),
+  schema: updateTodoSchema,
+})
+
 export default function App() {
   const [newTodo, setNewTodo] = useState(``)
 
-  const {
-    data: todos,
-    insert,
-    update,
-    delete: deleteTodo,
-  } = useCollection<UpdateTodo>({
-    id: `todos`,
-    sync: createElectricSync(
-      {
-        url: `http://localhost:3003/v1/shape`,
-        params: {
-          table: `todos`,
-        },
-        parser: {
-          // Parse timestamp columns into JavaScript Date objects
-          timestamptz: (date: string) => new Date(date),
-        },
-      },
-      { primaryKey: [`id`] }
-    ),
-    schema: updateTodoSchema,
-  })
+  const result = useLiveQuery((q) => q.from({ todoCollection }).select([`@id`]))
+  console.log({ result })
+
+  const todos = []
+  // const {
+  //   data: todos,
+  //   insert,
+  //   update,
+  //   delete: deleteTodo,
+  // } = useCollection(todoCollection)
 
   const {
     data: configData,
@@ -200,7 +208,7 @@ export default function App() {
 
     const tx = createTransaction({ mutationFn: todoMutationFn })
     tx.mutate(() =>
-      insert({
+      todoCollection.insert({
         text: newTodo,
         completed: false,
       })

@@ -181,6 +181,7 @@ export class Collection<T extends object = Record<string, unknown>> {
    * @throws Error if sync config is missing
    */
   constructor(config?: CollectionConfig<T>) {
+    console.log({ config })
     if (!config?.sync) {
       throw new Error(`Collection requires a sync config`)
     }
