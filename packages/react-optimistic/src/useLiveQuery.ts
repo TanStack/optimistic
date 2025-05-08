@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useStore } from "@tanstack/react-store"
 import { compileQuery, queryBuilder } from "@tanstack/optimistic"
 import type {
@@ -22,23 +22,30 @@ export function useLiveQuery<
   ) => QueryBuilder<TResultContext>,
   deps: Array<unknown> = []
 ): UseLiveQueryReturn<ResultsFromContext<TResultContext>> {
-  const unMountCount = useRef(0)
+  const [restart, forceRestart] = useState(0)
+
   const compiledQuery = useMemo(() => {
     const query = queryFn(queryBuilder())
     const compiled = compileQuery(query)
     compiled.start()
     return compiled
-  }, [...deps, unMountCount.current])
-
-  useEffect(() => {
-    return () => {
-      unMountCount.current++
-      compiledQuery.stop()
-    }
-  }, [compiledQuery])
+  }, [...deps, restart])
 
   const state = useStore(compiledQuery.results.derivedState)
   let data: Array<ResultsFromContext<TResultContext>> | undefined
+
+  // Clean up on unmount
+  useEffect(() => {
+    if (compiledQuery.state === `stopped`) {
+      forceRestart((count) => {
+        return (count += 1)
+      })
+    }
+
+    return () => {
+      compiledQuery.stop()
+    }
+  }, [compiledQuery])
 
   return {
     state,

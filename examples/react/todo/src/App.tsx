@@ -3,7 +3,6 @@ import {
   Collection,
   createElectricSync,
   createTransaction,
-  useCollection,
   useLiveQuery,
 } from "@tanstack/react-optimistic"
 import { DevTools } from "./DevTools"
@@ -57,7 +56,7 @@ const configMutationFn: MutationFn = async ({ transaction }) => {
   const result = await response.json()
 
   // Start waiting for the txid
-  await transaction.mutations[0].collection.config.sync.awaitTxid(result.txid)
+  await transaction.mutations[0]!.collection.config.sync.awaitTxid(result.txid)
 }
 
 const todoCollection = new Collection<UpdateTodo>({
@@ -78,45 +77,36 @@ const todoCollection = new Collection<UpdateTodo>({
   schema: updateTodoSchema,
 })
 
+const configCollection = new Collection<UpdateConfig>({
+  id: `config`,
+  sync: createElectricSync(
+    {
+      url: `http://localhost:3003/v1/shape`,
+      params: {
+        table: `config`,
+      },
+      parser: {
+        // Parse timestamp columns into JavaScript Date objects
+        timestamptz: (date: string) => {
+          return new Date(date)
+        },
+      },
+    },
+    { primaryKey: [`id`] }
+  ),
+  schema: updateConfigSchema,
+})
+
 export default function App() {
   const [newTodo, setNewTodo] = useState(``)
 
-  const result = useLiveQuery((q) =>
-    q.from({ todoCollection }).keyBy(`@id`).select(`@id`)
+  const { data: todos } = useLiveQuery((q) =>
+    q.from({ todoCollection }).keyBy(`@id`).select(`@id`, `@text`, `@completed`)
   )
-  console.log({ result })
 
-  const todos = []
-  // const {
-  //   data: todos,
-  //   insert,
-  //   update,
-  //   delete: deleteTodo,
-  // } = useCollection(todoCollection)
-
-  const {
-    data: configData,
-    update: updateConfig,
-    insert: insertConfig,
-  } = useCollection<UpdateConfig>({
-    id: `config`,
-    sync: createElectricSync(
-      {
-        url: `http://localhost:3003/v1/shape`,
-        params: {
-          table: `config`,
-        },
-        parser: {
-          // Parse timestamp columns into JavaScript Date objects
-          timestamptz: (date: string) => {
-            return new Date(date)
-          },
-        },
-      },
-      { primaryKey: [`id`] }
-    ),
-    schema: updateConfigSchema,
-  })
+  const { data: configData } = useLiveQuery((q) =>
+    q.from({ configCollection }).keyBy(`@id`).select(`@id`, `@key`, `@value`)
+  )
 
   // Define a more robust type-safe helper function to get config values
   const getConfigValue = (key: string): string => {
@@ -133,9 +123,12 @@ export default function App() {
     for (const config of configData) {
       if (config.key === key) {
         createTransaction({ mutationFn: configMutationFn }).mutate(() =>
-          updateConfig(config, (draft) => {
-            draft.value = value
-          })
+          configCollection.update(
+            Array.from(configCollection.state.values())[0]!,
+            (draft) => {
+              draft.value = value
+            }
+          )
         )
 
         return
@@ -144,7 +137,7 @@ export default function App() {
 
     // If the config doesn't exist yet, create it
     createTransaction({ mutationFn: configMutationFn }).mutate(() =>
-      insertConfig({
+      configCollection.insert({
         key,
         value,
       })
@@ -222,9 +215,14 @@ export default function App() {
   const toggleTodo = (todo: UpdateTodo) => {
     const tx = createTransaction({ mutationFn: todoMutationFn })
     tx.mutate(() =>
-      update(todo, (draft) => {
-        draft.completed = !draft.completed
-      })
+      todoCollection.update(
+        Array.from(todoCollection.state.values()).find(
+          (t) => t.id === todo.id
+        )!,
+        (draft) => {
+          draft.completed = !draft.completed
+        }
+      )
     )
   }
 
@@ -273,9 +271,16 @@ export default function App() {
                   onClick={() => {
                     const allCompleted = completedTodos.length === todos.length
                     const tx = createTransaction({ mutationFn: todoMutationFn })
+                    const todosToToggle = allCompleted
+                      ? completedTodos
+                      : activeTodos
+                    const togglingIds = new Set()
+                    todosToToggle.forEach((t) => togglingIds.add(t.id))
                     tx.mutate(() =>
-                      update(
-                        allCompleted ? completedTodos : activeTodos,
+                      todoCollection.update(
+                        Array.from(todoCollection.state.values()).filter((t) =>
+                          togglingIds.has(t.id)
+                        ),
                         (drafts) => {
                           drafts.forEach(
                             (draft) => (draft.completed = !allCompleted)
@@ -327,7 +332,7 @@ export default function App() {
                             const tx = createTransaction({
                               mutationFn: todoMutationFn,
                             })
-                            tx.mutate(() => deleteTodo(todo))
+                            tx.mutate(() => todoCollection.delete(todo))
                           }}
                           className="hidden group-hover:block absolute right-[10px] w-[40px] h-[40px] my-auto top-0 bottom-0 text-[30px] text-[#cc9a9a] hover:text-[#af5b5e] transition-colors"
                         >
@@ -350,7 +355,13 @@ export default function App() {
                         const tx = createTransaction({
                           mutationFn: todoMutationFn,
                         })
-                        tx.mutate(() => deleteTodo(completedTodos))
+                        tx.mutate(() =>
+                          todoCollection.delete(
+                            Array.from(todoCollection.state.values()).filter(
+                              (t) => completedTodos.some((ct) => ct.id === t.id)
+                            )
+                          )
+                        )
                       }}
                       className="text-inherit hover:underline"
                     >
