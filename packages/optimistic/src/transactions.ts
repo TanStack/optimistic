@@ -128,7 +128,6 @@ export class Transaction {
       throw `You can no longer call .rollback() as the transaction is already completed`
     }
 
-    console.log(`set state to failed`, this)
     this.setState(`failed`)
 
     // See if there's any other transactions w/ mutations on the same keys
@@ -147,10 +146,7 @@ export class Transaction {
     // Reject the promise
     this.isPersisted.reject(this.error?.error)
 
-    console.log(`touching collection`, this)
     this.touchCollection()
-
-    console.log(`done rolling back`)
 
     return this
   }
@@ -187,39 +183,11 @@ export class Transaction {
 
       this.isPersisted.resolve(this)
     } catch (error) {
-      console.error(`Caught error:`, error) // Add this to confirm error capture
-
-      console.log(`DEBUG: Value of 'this' is:`, this)
-
-      console.log(
-        `DEBUG: Type of 'error' is:`,
-        typeof error,
-        `Is instanceof Error?`,
-        error instanceof Error
-      )
-      if (error && typeof error === `object` && !(error instanceof Error)) {
-        console.log(
-          `DEBUG: 'error' is an object but not an Error instance. Keys:`,
-          Object.keys(error)
-        )
+      // Update transaction with error information
+      this.error = {
+        message: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
       }
-
-      try {
-        // Update transaction with error information
-        this.error = {
-          message: error instanceof Error ? error.message : String(error),
-          error: error instanceof Error ? error : new Error(String(error)),
-        }
-      } catch (assignmentError) {
-        console.error(`!!! FAILED TO ASSIGN 'this.error' !!!`)
-        console.error(`Assignment error was:`, assignmentError)
-        console.error(`Original error object was:`, error)
-        console.error(`Value of 'this' during assignment error:`, this)
-        // You might want to re-throw or handle this critical failure differently
-        // For now, just logging it helps immensely.
-      }
-
-      console.log(`after this.error`, this.error)
 
       // rollback the transaction
       return this.rollback()
