@@ -122,28 +122,6 @@ function createElectricSync<T extends Row<unknown>>(
   const relationSchema = new Store<string | undefined>(undefined)
 
   /**
-   * Generate a key from a row using the primaryKey columns
-   * @param row - The row data
-   * @returns A string key formed from the primary key values
-   */
-  const generateKeyFromRow = (row: T): string => {
-    // eslint-disable-next-line
-    if (!primaryKey || primaryKey.length === 0) {
-      throw new Error(`Primary key is required for Electric sync`)
-    }
-
-    return primaryKey
-      .map((key) => {
-        const value = row[key]
-        if (value === undefined) {
-          throw new Error(`Primary key column "${key}" not found in row`)
-        }
-        return String(value)
-      })
-      .join(`|`)
-  }
-
-  /**
    * Get the sync metadata for insert operations
    * @returns Record containing primaryKey and relation information
    */
@@ -190,9 +168,7 @@ function createElectricSync<T extends Row<unknown>>(
               transactionStarted = true
             }
 
-            // Use the message's key if available, otherwise generate one from the row using primaryKey
-            const key =
-              message.key || generateKeyFromRow(message.value as unknown as T)
+            const key = message.key
 
             // Include the primary key and relation info in the metadata
             const enhancedMetadata = {
