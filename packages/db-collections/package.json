@@ -4,6 +4,7 @@
   "version": "0.0.3",
   "dependencies": {
     "@tanstack/optimistic": "workspace:*",
+    "@tanstack/query-core": "^5.75.7",
     "@tanstack/store": "^0.7.0"
   },
   "devDependencies": {
