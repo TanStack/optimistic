@@ -4,7 +4,7 @@ import {
   isControlMessage,
 } from "@electric-sql/client"
 import { Store } from "@tanstack/store"
-import type { SyncConfig } from "@tanstack/optimistic"
+import { Collection, type CollectionConfig } from "@tanstack/optimistic"
 import type {
   ControlMessage,
   Message,
@@ -12,28 +12,68 @@ import type {
   ShapeStreamOptions,
 } from "@electric-sql/client"
 
-// Re-exports
-export type * from "@tanstack/optimistic"
-export * from "./useCollection"
-export type { Collection } from "@tanstack/optimistic"
+/**
+ * Configuration interface for ElectricCollection
+ */
+export interface ElectricCollectionConfig<T> extends Omit<CollectionConfig<T>, 'sync'> {
+  /**
+   * Configuration options for the ElectricSQL ShapeStream
+   */
+  streamOptions: ShapeStreamOptions
+
+  /**
+   * Array of column names that form the primary key of the shape
+   */
+  primaryKey: string[]
+}
 
 /**
- * Extended SyncConfig interface with ElectricSQL-specific functionality
+ * Specialized Collection class for ElectricSQL integration
  */
-export interface ElectricSync extends SyncConfig {
-  /**
-   * Wait for a specific transaction ID to be synced
-   * @param txid The transaction ID to wait for
-   * @param timeout Optional timeout in milliseconds (defaults to 30000ms)
-   * @returns Promise that resolves when the txid is synced
-   */
-  awaitTxid: (txid: number, timeout?: number) => Promise<boolean>
+export class ElectricCollection<T extends Row<unknown>> extends Collection<T> {
+  private seenTxids: Store<Set<number>>
+  private relationSchema: Store<string | undefined>
+  private primaryKey: string[]
+
+  constructor(config: ElectricCollectionConfig<T>) {
+    const seenTxids = new Store<Set<number>>(new Set([Math.random()]))
+    const sync = createElectricSync(config.streamOptions, {
+      primaryKey: config.primaryKey,
+      seenTxids,
+    })
+
+    super({ ...config, sync })
+
+    this.seenTxids = seenTxids
+    this.relationSchema = new Store<string | undefined>(undefined)
+    this.primaryKey = config.primaryKey
+  }
 
   /**
-   * Get the sync metadata for insert operations
-   * @returns Record containing primaryKey and relation information
+   * Wait for a specific transaction ID to be synced
+   * @param txId The transaction ID to wait for
+   * @param timeout Optional timeout in milliseconds (defaults to 30000ms)
+   * @returns Promise that resolves when the txId is synced
    */
-  getSyncMetadata: () => Record<string, unknown>
+  async awaitTxId(txId: number, timeout = 30000): Promise<boolean> {
+    const hasTxid = this.seenTxids.state.has(txId)
+    if (hasTxid) return true
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        unsubscribe()
+        reject(new Error(`Timeout waiting for txId: ${txId}`))
+      }, timeout)
+
+      const unsubscribe = this.seenTxids.subscribe(() => {
+        if (this.seenTxids.state.has(txId)) {
+          clearTimeout(timeoutId)
+          unsubscribe()
+          resolve(true)
+        }
+      })
+    })
+  }
 }
 
 function isUpToDateMessage<T extends Row<unknown> = Row>(
@@ -60,48 +100,26 @@ function hasTxids<T extends Row<unknown> = Row>(
  * @param options - Options for the ElectricSync configuration
  * @returns ElectricSync configuration
  */
-export function createElectricSync<T extends Row<unknown> = Row>(
-  streamOptions: ShapeStreamOptions,
-  options: ElectricSyncOptions
-): ElectricSync {
-  const { primaryKey } = options
+/**
+ * Create a new ElectricCollection instance
+ */
+export function createElectricCollection<T extends Row<unknown>>(
+  config: ElectricCollectionConfig<T>
+): ElectricCollection<T> {
+  return new ElectricCollection(config)
+}
 
-  // Create a store to track seen txids
-  const seenTxids = new Store<Set<number>>(new Set())
+/**
+ * Internal function to create ElectricSQL sync configuration
+ */
+function createElectricSync<T extends Row<unknown>>(
+  streamOptions: ShapeStreamOptions,
+  options: { primaryKey: string[], seenTxids: Store<Set<number>> }
+) {
+  const { primaryKey, seenTxids } = options
 
   // Store for the relation schema information
   const relationSchema = new Store<string | undefined>(undefined)
-
-  // Function to check if a txid has been seen
-  const hasTxid = (txid: number): boolean => {
-    return seenTxids.state.has(txid)
-  }
-
-  // Function to await a specific txid
-  const awaitTxid = async (txid: number, timeout = 30000): Promise<boolean> => {
-    // If we've already seen this txid, resolve immediately
-    if (hasTxid(txid)) {
-      return true
-    }
-
-    // Otherwise, create a promise that resolves when the txid is seen
-    return new Promise<boolean>((resolve, reject) => {
-      // Set up a timeout
-      const timeoutId = setTimeout(() => {
-        unsubscribe()
-        reject(new Error(`Timeout waiting for txid: ${txid}`))
-      }, timeout)
-
-      // Subscribe to the store to watch for the txid
-      const unsubscribe = seenTxids.subscribe(() => {
-        if (hasTxid(txid)) {
-          clearTimeout(timeoutId)
-          unsubscribe()
-          resolve(true)
-        }
-      })
-    })
-  }
 
   /**
    * Generate a key from a row using the primaryKey columns
@@ -205,8 +223,6 @@ export function createElectricSync<T extends Row<unknown> = Row>(
         }
       })
     },
-    // Expose the awaitTxid function
-    awaitTxid,
     // Expose the getSyncMetadata function
     getSyncMetadata,
   }
