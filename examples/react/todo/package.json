@@ -1,7 +1,7 @@
 {
   "name": "examples/react/todo",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "dependencies": {
     "@tanstack/react-optimistic": "workspace:*",
     "@tanstack/db-collections": "workspace:*",
