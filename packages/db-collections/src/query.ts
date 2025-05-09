@@ -62,11 +62,15 @@ export class QueryCollection<
       ...baseCollectionConfig
     } = config
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!queryKey)
       throw new Error(`[QueryCollection] queryKey must be provided.`)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!queryFn) throw new Error(`[QueryCollection] queryFn must be provided.`)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!queryClient)
       throw new Error(`[QueryCollection] queryClient must be provided.`)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!baseCollectionConfig.getPrimaryKey) {
       throw new Error(`[QueryCollection] getPrimaryKey must be provided.`)
     }
@@ -102,14 +106,12 @@ export class QueryCollection<
       >(queryClient, observerOptions)
 
       const actualUnsubscribeFn = localObserver.subscribe((result) => {
-        if (result.isSuccess && result.data !== undefined) {
+        if (result.isSuccess) {
           const newItemsArray = result.data
 
           if (
             !Array.isArray(newItemsArray) ||
-            newItemsArray.some(
-              (item) => typeof item !== `object` || item === null
-            )
+            newItemsArray.some((item) => typeof item !== `object`)
           ) {
             console.error(
               `[QueryCollection] queryFn did not return an array of objects. Skipping update.`,
