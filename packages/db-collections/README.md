@@ -17,7 +17,7 @@ pnpm add @electric-sql/client
 
 ## Overview
 
-This package provides specialized collection implementations that integrate TanStack Optimistic's `Collection` with various data sources:
+This package provides specialized collection implementations for querying and syncing data:
 
 - `QueryCollection`: Integrates with TanStack Query for data fetching and synchronization
 - `ElectricCollection`: Integrates with ElectricSQL for real-time sync straight out of Postgres.
@@ -59,7 +59,7 @@ Creates a new `QueryCollection` instance.
 
 ## ElectricCollection
 
-`ElectricCollection` integrates TanStack Optimistic's `Collection` with ElectricSQL for synced applications, providing a reactive data collection that automatically syncs with your Postgres database.
+`ElectricCollection` integrates TanStack Optimistic's `Collection` with ElectricSQL for sync-based applications, providing a reactive data collection that automatically syncs with your Postgres database.
 
 ### Features
 

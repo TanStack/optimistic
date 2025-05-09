@@ -169,6 +169,7 @@ describe(`QueryCollection`, () => {
       queryKey,
       queryFn,
       getPrimaryKey,
+      retry: 0, // Disable retries for this test case
     })
 
     // Wait for initial data to load
