@@ -4,7 +4,8 @@ import {
   isControlMessage,
 } from "@electric-sql/client"
 import { Store } from "@tanstack/store"
-import { Collection, type CollectionConfig } from "@tanstack/optimistic"
+import { Collection } from "@tanstack/optimistic"
+import type { CollectionConfig, SyncConfig } from "@tanstack/optimistic"
 import type {
   ControlMessage,
   Message,
@@ -15,7 +16,8 @@ import type {
 /**
  * Configuration interface for ElectricCollection
  */
-export interface ElectricCollectionConfig<T> extends Omit<CollectionConfig<T>, 'sync'> {
+export interface ElectricCollectionConfig<T extends Row<unknown>>
+  extends Omit<CollectionConfig<T>, `sync`> {
   /**
    * Configuration options for the ElectricSQL ShapeStream
    */
@@ -24,20 +26,20 @@ export interface ElectricCollectionConfig<T> extends Omit<CollectionConfig<T>, '
   /**
    * Array of column names that form the primary key of the shape
    */
-  primaryKey: string[]
+  primaryKey: Array<string>
 }
 
 /**
  * Specialized Collection class for ElectricSQL integration
  */
-export class ElectricCollection<T extends Row<unknown>> extends Collection<T> {
+export class ElectricCollection<
+  T extends Row<unknown> = Record<string, unknown>,
+> extends Collection<T> {
   private seenTxids: Store<Set<number>>
-  private relationSchema: Store<string | undefined>
-  private primaryKey: string[]
 
   constructor(config: ElectricCollectionConfig<T>) {
     const seenTxids = new Store<Set<number>>(new Set([Math.random()]))
-    const sync = createElectricSync(config.streamOptions, {
+    const sync = createElectricSync<T>(config.streamOptions, {
       primaryKey: config.primaryKey,
       seenTxids,
     })
@@ -45,8 +47,6 @@ export class ElectricCollection<T extends Row<unknown>> extends Collection<T> {
     super({ ...config, sync })
 
     this.seenTxids = seenTxids
-    this.relationSchema = new Store<string | undefined>(undefined)
-    this.primaryKey = config.primaryKey
   }
 
   /**
@@ -114,8 +114,8 @@ export function createElectricCollection<T extends Row<unknown>>(
  */
 function createElectricSync<T extends Row<unknown>>(
   streamOptions: ShapeStreamOptions,
-  options: { primaryKey: string[], seenTxids: Store<Set<number>> }
-) {
+  options: { primaryKey: Array<string>; seenTxids: Store<Set<number>> }
+): SyncConfig<T> {
   const { primaryKey, seenTxids } = options
 
   // Store for the relation schema information
@@ -160,7 +160,8 @@ function createElectricSync<T extends Row<unknown>>(
   }
 
   return {
-    sync: ({ begin, write, commit }) => {
+    sync: (params: Parameters<SyncConfig<T>[`sync`]>[0]) => {
+      const { begin, write, commit } = params
       const stream = new ShapeStream(streamOptions)
       let transactionStarted = false
       let newTxids = new Set<number>()
@@ -202,7 +203,7 @@ function createElectricSync<T extends Row<unknown>>(
             write({
               key,
               type: message.headers.operation,
-              value: message.value,
+              value: message.value as unknown as T,
               metadata: enhancedMetadata,
             })
           } else if (isUpToDateMessage(message)) {
