@@ -15,6 +15,7 @@ export interface QueryCollectionConfig<
 > extends Omit<CollectionConfig<TItem>, `sync`> {
   queryKey: TQueryKey
   queryFn: (context: QueryFunctionContext<TQueryKey>) => Promise<Array<TItem>>
+  getPrimaryKey: (item: TItem) => string
 
   enabled?: boolean
   refetchInterval?: QueryObserverOptions<
@@ -72,7 +73,7 @@ export class QueryCollection<
 
     const getPrimaryKeyFn = baseCollectionConfig.getPrimaryKey
 
-    const internalSync: SyncConfig<TItem, Array<TItem>>[`sync`] = (params) => {
+    const internalSync: SyncConfig<TItem>[`sync`] = (params) => {
       const { begin, write, commit, collection } = params
 
       const observerOptions: QueryObserverOptions<
@@ -163,7 +164,7 @@ export class QueryCollection<
           currentSyncedItems.forEach((oldItem, key) => {
             const newItem = newItemsMap.get(key)
             if (!newItem) {
-              write({ type: `delete`, key })
+              write({ type: `delete`, key, value: oldItem })
             } else if (
               !shallowEqual(
                 oldItem as Record<string, any>,

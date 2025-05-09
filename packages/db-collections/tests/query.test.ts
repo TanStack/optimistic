@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { QueryClient, QueryObserver } from "@tanstack/query-core"
-import { createQueryCollection, type QueryCollectionConfig, type QueryCollection } from "../src/query"
-import type { ChangeMessage } from "@tanstack/optimistic"
-import { SyncConfig } from "@tanstack/optimistic"
+import { QueryClient } from "@tanstack/query-core"
+import { createQueryCollection } from "../src/query"
+import type { QueryCollectionConfig } from "../src/query"
 
 interface TestItem {
   id: string
@@ -25,14 +24,13 @@ describe(`QueryCollection`, () => {
           // Setting a low staleTime and cacheTime to ensure queries can be refetched easily in tests
           // and GC'd quickly if not observed.
           staleTime: 0,
-          cacheTime: 0,
           retry: false, // Disable retries for tests to avoid delays
         },
       },
     })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     // Ensure all queries are properly cleaned up after each test
     queryClient.clear()
   })
@@ -47,6 +45,7 @@ describe(`QueryCollection`, () => {
     const queryFn = vi.fn().mockResolvedValue(initialItems)
 
     const config: QueryCollectionConfig<TestItem> = {
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
@@ -97,6 +96,7 @@ describe(`QueryCollection`, () => {
       .mockImplementation(() => Promise.resolve(currentItems))
 
     const config: QueryCollectionConfig<TestItem> = {
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
@@ -164,6 +164,7 @@ describe(`QueryCollection`, () => {
       .mockRejectedValueOnce(testError)
 
     const collection = createQueryCollection({
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
@@ -211,6 +212,7 @@ describe(`QueryCollection`, () => {
     const queryFn = vi.fn().mockResolvedValue(`not an array` as any)
 
     const collection = createQueryCollection({
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
@@ -254,9 +256,10 @@ describe(`QueryCollection`, () => {
       .mockResolvedValueOnce([{ ...initialItem, count: 43 }]) // Actually changed data
 
     // Spy on console.log to detect when commits happen
-    const consoleSpy = vi.spyOn(console, 'log')
+    const consoleSpy = vi.spyOn(console, `log`)
 
     const collection = createQueryCollection({
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
@@ -281,15 +284,17 @@ describe(`QueryCollection`, () => {
     await vi.waitFor(() => {
       expect(queryFn).toHaveBeenCalledTimes(2)
       // Verify invalidation was logged
-      expect(consoleSpy.mock.calls.some(call => 
-        call[0].includes(`Invalidation successful for ${String(queryKey)}`)
-      )).toBe(true)
+      expect(
+        consoleSpy.mock.calls.some((call) =>
+          call[0].includes(`Invalidation successful for ${String(queryKey)}`)
+        )
+      ).toBe(true)
     })
 
     // Since the data is identical (though a different object reference),
     // the state object reference should remain the same due to shallow equality
     expect(collection.state.get(`1`)).toBe(initialStateRef) // Same reference
-    
+
     consoleSpy.mockClear()
 
     // Trigger second refetch - should cause an update due to actual data change
@@ -299,9 +304,11 @@ describe(`QueryCollection`, () => {
     await vi.waitFor(() => {
       expect(queryFn).toHaveBeenCalledTimes(3)
       // Verify invalidation was logged
-      expect(consoleSpy.mock.calls.some(call => 
-        call[0].includes(`Invalidation successful for ${String(queryKey)}`)
-      )).toBe(true)
+      expect(
+        consoleSpy.mock.calls.some((call) =>
+          call[0].includes(`Invalidation successful for ${String(queryKey)}`)
+        )
+      ).toBe(true)
     })
 
     // Now the state should be updated with the new value
@@ -314,7 +321,7 @@ describe(`QueryCollection`, () => {
 
   it(`should use the provided getPrimaryKey function to identify items`, async () => {
     const queryKey = [`customKeyTest`]
-    
+
     // Items with a non-standard ID field
     const items = [
       { customId: `item1`, name: `First Item` },
@@ -322,66 +329,67 @@ describe(`QueryCollection`, () => {
     ]
 
     const queryFn = vi.fn().mockResolvedValue(items)
-    
+
     // Create a spy for the getPrimaryKey function
     const getPrimaryKeySpy = vi.fn((item: any) => item.customId)
-    
+
     const collection = createQueryCollection({
+      id: `test`,
       queryClient,
       queryKey,
       queryFn,
       getPrimaryKey: getPrimaryKeySpy,
     })
-    
+
     // Wait for initial data to load
     await vi.waitFor(() => {
       expect(queryFn).toHaveBeenCalledTimes(1)
       expect(collection.state.size).toBe(items.length)
     })
-    
+
     // Verify getPrimaryKey was called for each item
     expect(getPrimaryKeySpy).toHaveBeenCalledTimes(items.length)
-    items.forEach(item => {
+    items.forEach((item) => {
       expect(getPrimaryKeySpy).toHaveBeenCalledWith(item)
     })
-    
+
     // Verify items are stored with the custom keys
     expect(collection.state.has(`item1`)).toBe(true)
     expect(collection.state.has(`item2`)).toBe(true)
     expect(collection.state.get(`item1`)).toEqual(items[0])
     expect(collection.state.get(`item2`)).toEqual(items[1])
-    
+
     // Now update an item and add a new one
     const updatedItems = [
       { customId: `item1`, name: `Updated First Item` }, // Updated
-      { customId: `item3`, name: `Third Item` },         // New
+      { customId: `item3`, name: `Third Item` }, // New
       // item2 removed
     ]
-    
+
     // Reset the spy to track new calls
     getPrimaryKeySpy.mockClear()
     queryFn.mockResolvedValueOnce(updatedItems)
-    
+
     // Trigger a refetch
     await collection.invalidate()
-    
+
     // Wait for the refetch to complete
     await vi.waitFor(() => {
       expect(queryFn).toHaveBeenCalledTimes(2)
       expect(collection.state.size).toBe(updatedItems.length)
     })
-    
+
     // Verify getPrimaryKey was called at least once for each item
     // It may be called multiple times per item during the diffing process
     expect(getPrimaryKeySpy).toHaveBeenCalled()
-    updatedItems.forEach(item => {
+    updatedItems.forEach((item) => {
       expect(getPrimaryKeySpy).toHaveBeenCalledWith(item)
     })
-    
+
     // Verify the state reflects the changes
     expect(collection.state.has(`item1`)).toBe(true)
     expect(collection.state.has(`item2`)).toBe(false) // Removed
-    expect(collection.state.has(`item3`)).toBe(true)  // Added
+    expect(collection.state.has(`item3`)).toBe(true) // Added
     expect(collection.state.get(`item1`)).toEqual(updatedItems[0])
     expect(collection.state.get(`item3`)).toEqual(updatedItems[1])
   })
