@@ -7,5 +7,4 @@ export {
   QueryCollection,
   createQueryCollection,
   type QueryCollectionConfig,
-  type QueryKey, // Also exporting QueryKey as it's part of QueryCollectionConfig
 } from "./query"
