@@ -23,7 +23,7 @@ TanStack DB extends TanStack Query with collections, live queries and transactio
   </a>
 </p>
 
-Enjoy this library? Try the entire [TanStack](https://tanstack.com), including [TanStack Query](https://tanstack.com/query), [TanStack Store](https://tanstack.com/store).
+Enjoy this library? Try the entire [TanStack](https://tanstack.com), including [TanStack Query](https://tanstack.com/query), [TanStack Store](https://tanstack.com/store), etc.
 
 ## 🚀 Why TanStack DB?
 
