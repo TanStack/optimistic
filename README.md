@@ -51,8 +51,8 @@ Sync data into collections:
 ```ts
 import { createElectricCollection } from '@tanstack/db-collections'
 
-// Here we're using the ElectricSQL sync engine but you can
-// configure any data loading strategy you like.
+// You can configure any strategy you like to load data into
+// collections. Here we're using the Electric sync engine.
 export const todoCollection = createElectricCollection<Todo>({
   id: 'todos',
   streamOptions: {
@@ -62,7 +62,7 @@ export const todoCollection = createElectricCollection<Todo>({
     }
   },
   primaryKey: ['id'],
-  schema: todoSchema // standard schema interface for type safety
+  schema: todoSchema // standard schema interface
 })
 ```
 
@@ -73,7 +73,9 @@ import { useLiveQuery } from '@tanstack/react-optimistic'
 
 const Todos = () => {
   const { data: todos } = useLiveQuery(query =>
-    // You can query across collections with joins, aggregates, etc.
+    // You can query across collections with where clauses,
+    // joins, aggregates, etc. Here we're doing a simple query
+    // for all the todos that aren't completed.
     query
       .from({ todoCollection })
       .where('@completed', '=', false)
@@ -81,16 +83,15 @@ const Todos = () => {
       .keyBy('@id')
   )
 
-  return <List items={todos} />
+  return <List items={ todos } />
 }
 ```
 
-Make writes using transactional mutations:
+Define a `mutationFn` to handle persistence of local writes:
 
-```ts
+```tsx
 import type { Collection } from '@tanstack/optimistic'
 import type { MutationFn, PendingMutation } from '@tanstack/react-optimistic'
-import { createTransaction } from '@tanstack/react-optimistic'
 
 const filterOutCollection = (mutation: PendingMutation) => {
   const { collection: _, ...rest } = mutation
@@ -98,43 +99,57 @@ const filterOutCollection = (mutation: PendingMutation) => {
   return rest
 }
 
-// Transactions are created with a mutationFn that handles their mutations.
-// In this case, we POST them to the server.
-const tx = createTransaction({
-  mutationFn: async ({ transaction }) => {
-    const payload = transaction.mutations.map(filterOutCollection)
-    const response = await fetch('https://example.com/your-api', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    })
-
-    if (!response.ok) {
-      // Throwing an error will rollback the optimistic state.
-      throw new Error(`HTTP Error: ${response.status}`)
-    }
-
-    const result = await response.json()
-
-    // Wait for the transaction to be synced back from the server
-    // before discarding the optimistic state.
-    const collection: Collection = transaction.mutations[0]!.collection
-    await collection.config.sync.awaitTxid(result.txid)
-  }
-})
-
-// Triggers the mutationFn
-tx.mutate(() =>
-  // Applies the local optimistic state
-  todoCollection.insert({
-    id: uuid(),
-    text: '🔥 Make app faster',
-    completed: false
+// You can handle mutations any way you like. Here, we define a
+// generic function that POSTs them to the server.
+const mutationFn: MutationFn = async ({ transaction }) => {
+  const payload = transaction.mutations.map(filterOutCollection)
+  const response = await fetch('https://api.example.com', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
   })
-)
+
+  if (!response.ok) {
+    // Throwing an error will rollback the optimistic state.
+    throw new Error(`HTTP Error: ${response.status}`)
+  }
+
+  const result = await response.json()
+
+  // Wait for the transaction to be synced back from the server
+  // before discarding the optimistic state.
+  const collection: Collection = transaction.mutations[0]!.collection
+  await collection.config.sync.awaitTxid(result.txid)
+}
 ```
+
+Use it in your components:
+
+```tsx
+import { useOptimisticMutation } from '@tanstack/react-optimistic'
+
+const AddTodo = () => {
+  const tx = useOptimisticMutation({ mutationFn })
+
+  const addTodo = () => {
+    // Triggers the mutationFn to sync data in the background.
+    tx.mutate(() =>
+      // Instantly applies the local optimistic state.
+      todoCollection.insert({
+        id: uuid(),
+        text: '🔥 Make app faster',
+        completed: false
+      })
+    )
+  }
+
+  return <Button onClick={ addTodo } />
+}
+```
+
+For transactional writes with local optimistic state and managed background sync.
 
 ## 🧱 Core concepts
 
