@@ -9,18 +9,17 @@ TanStack DB extends TanStack Query with collections, live queries and transactio
 
 <p>
   <a href="https://x.com/intent/post?text=TanStack%20DB&url=https://tanstack.com/db">
-    <img alt="#TanStack" src="https://img.shields.io/twitter/url?color=%2308a0e9&label=%23TanStack&style=social&url=https%3A%2F%2Ftwitter.com%2Fintent%2Ftweet%3Fbutton_hashtag%3DTanStack">
-  </a><a href="https://discord.gg/yjUNbvbraC">
-    <img alt="" src="https://img.shields.io/badge/Discord-TanStack-%235865F2" />
-  </a><a href="https://discord.electric-sql.com">
-    <img alt="" src="https://img.shields.io/badge/Discord-Electric-%235865F2" />
-  </a><a href="https://npmjs.com/package/@tanstack/db">
-    <img alt="" src="https://img.shields.io/npm/dm/@tanstack/db.svg" />
-  </a><a href="https://github.com/tanstack/db/discussions">
-    <img alt="Join the discussion on Github" src="https://img.shields.io/badge/Discussions-Chat%20now!-green" />
-  </a><a href="https://x.com/tan_stack">
-    <img alt="" src="https://img.shields.io/twitter/follow/tan_stack.svg?style=social&label=Follow @TanStack" />
-  </a>
+    <img alt="#TanStack" src="https://img.shields.io/twitter/url?color=%2308a0e9&label=%23TanStack&style=social&url=https%3A%2F%2Ftwitter.com%2Fintent%2Ftweet%3Fbutton_hashtag%3DTanStack" /></a>
+  <a href="https://discord.gg/yjUNbvbraC">
+    <img alt="" src="https://img.shields.io/badge/Discord-TanStack-%235865F2" /></a>
+  <a href="https://discord.electric-sql.com">
+    <img alt="" src="https://img.shields.io/badge/Discord-Electric-%235865F2" /></a>
+  <a href="https://npmjs.com/package/@tanstack/db">
+    <img alt="" src="https://img.shields.io/npm/dm/@tanstack/db.svg" /></a>
+  <a href="https://github.com/tanstack/db/discussions">
+    <img alt="Join the discussion on Github" src="https://img.shields.io/badge/Discussions-Chat%20now!-green" /></a>
+  <a href="https://x.com/tan_stack">
+    <img alt="" src="https://img.shields.io/twitter/follow/tan_stack.svg?style=social&label=Follow @TanStack" /></a>
 </p>
 
 Enjoy this library? Try the entire [TanStack](https://tanstack.com), including [TanStack Query](https://tanstack.com/query), [TanStack Store](https://tanstack.com/store), etc.
@@ -29,7 +28,7 @@ Enjoy this library? Try the entire [TanStack](https://tanstack.com), including [
 
 TanStack DB gives you robust support for real-time sync, live queries and local writes. With no stale data, super fast re-rendering and sub-millisecond cross-collection queries — even for large complex apps.
 
-Built on a [TypeScript implementation of differential dataflow](https://github.com/electric-sql/d2ts), TanStack DB provides:
+Built on a TypeScript implementation of differential dataflow ([#](https://github.com/electric-sql/d2ts)), TanStack DB provides:
 
 - 🔥 **a blazing fast query engine**<br />
   for sub-millisecond live queries &mdash; even for complex queries with joins and aggregates
@@ -53,21 +52,20 @@ Sync data into collections. Bind live queries to your components. Make writes us
 import { Collection, createTransaction, useLiveQuery } from '@tanstack/react-optimistic'
 import type { MutationFn, PendingMutation } from '@tanstack/react-optimistic'
 
-// Sync data into collections.
-// You can use a sync engine or any data loading strategy.
+// Sync data into collections
 export const todoCollection = new Collection<Todo>({
   id: 'todos',
   sync: {
-    // config
+    // use a sync engine like ElectricSQL or any data
+    // loading strategy including TanStack Query
   },
   schema: todoSchema // standard schema interface
 })
 
-// Bind live queries to your components.
-// You can query across collections with support for joins, aggregates, etc.
+// Bind live queries to your components
 const Todos = () => {
   const { data: todos } = useLiveQuery(q =>
-    q
+    q // queries support joins, aggregates, etc.
       .from({ todoCollection })
       .select('@t.id', '@t.text', '@t.completed')
       .keyBy('@id')
@@ -76,10 +74,11 @@ const Todos = () => {
   return <List items={todos} />
 }
 
-// Make writes using transactional mutations.
-// With optimistic state and background sync managed for you.
+// Make writes using transactional mutations
 const tx = createTransaction({ mutationFn: /* ... */ })
 tx.mutate(() =>
+  // applies local optimistic state and triggers
+  // background sync using your mutationFn
   todoCollection.insert({
     id: uuid(),
     text: '🔥 Make app faster',
