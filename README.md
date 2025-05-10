@@ -97,8 +97,8 @@ const filterOutCollection = (mutation: PendingMutation) => {
   return rest
 }
 
-// Transactions are defined with a mutationFn that defines how you want to
-// handle their mutations. Usually by posting them to the server.
+// Transactions are created with a mutationFn that handles their mutations.
+// In this case, we POST them to the server.
 const tx = createTransaction({ mutationFn: async ({ transaction }) => {
   const payload = transaction.mutations.map(filterOutCollection)
   const response = await fetch('https://example.com/your-api', {
@@ -109,19 +109,20 @@ const tx = createTransaction({ mutationFn: async ({ transaction }) => {
     body: JSON.stringify(payload)
   })
 
-  if (!response.ok) { // rollback the optimistic state
+  if (!response.ok) {
+    // Throwing an error will rollback the optimistic state.
     throw new Error(`HTTP Error: ${response.status}`)
   }
 
   const result = await response.json()
 
   // Wait for the transaction to be synced back from the server
-  // before discarding the local optimistic state.
+  // before discarding the optimistic state.
   await transaction.mutations[0]!.collection.config.sync.awaitTxid(result.txid)
 } })
 
 tx.mutate(() =>
-  // Applies the local optimistic state and triggers your mutationFn
+  // Applies the local optimistic state and triggers the mutationFn
   todoCollection.insert({
     id: uuid(),
     text: '🔥 Make app faster',
