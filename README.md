@@ -88,8 +88,9 @@ const Todos = () => {
 Make writes using transactional mutations:
 
 ```ts
-import { createTransaction } from '@tanstack/react-optimistic'
+import type { Collection } from '@tanstack/optimistic'
 import type { MutationFn, PendingMutation } from '@tanstack/react-optimistic'
+import { createTransaction } from '@tanstack/react-optimistic'
 
 const filterOutCollection = (mutation: PendingMutation) => {
   const { collection: _, ...rest } = mutation
@@ -99,30 +100,34 @@ const filterOutCollection = (mutation: PendingMutation) => {
 
 // Transactions are created with a mutationFn that handles their mutations.
 // In this case, we POST them to the server.
-const tx = createTransaction({ mutationFn: async ({ transaction }) => {
-  const payload = transaction.mutations.map(filterOutCollection)
-  const response = await fetch('https://example.com/your-api', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload)
-  })
+const tx = createTransaction({
+  mutationFn: async ({ transaction }) => {
+    const payload = transaction.mutations.map(filterOutCollection)
+    const response = await fetch('https://example.com/your-api', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    })
 
-  if (!response.ok) {
-    // Throwing an error will rollback the optimistic state.
-    throw new Error(`HTTP Error: ${response.status}`)
+    if (!response.ok) {
+      // Throwing an error will rollback the optimistic state.
+      throw new Error(`HTTP Error: ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    // Wait for the transaction to be synced back from the server
+    // before discarding the optimistic state.
+    const collection: Collection = transaction.mutations[0]!.collection
+    await collection.config.sync.awaitTxid(result.txid)
   }
+})
 
-  const result = await response.json()
-
-  // Wait for the transaction to be synced back from the server
-  // before discarding the optimistic state.
-  await transaction.mutations[0]!.collection.config.sync.awaitTxid(result.txid)
-} })
-
+// Triggers the mutationFn
 tx.mutate(() =>
-  // Applies the local optimistic state and triggers the mutationFn
+  // Applies the local optimistic state
   todoCollection.insert({
     id: uuid(),
     text: '🔥 Make app faster',
