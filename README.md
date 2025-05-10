@@ -46,39 +46,82 @@ TanStack DB is **backend agnostic** and **incrementally adoptable**:
 
 ## 💥 Usage example
 
-Sync data into collections. Bind live queries to your components. Make writes using transactional mutations.
+Sync data into collections:
+
+```ts
+import { createElectricCollection } from '@tanstack/db-collections'
+
+// Here we're using the ElectricSQL sync engine but you can
+// configure any data loading strategy you like.
+export const todoCollection = createElectricCollection<Todo>({
+  id: 'todos',
+  streamOptions: {
+    url: 'https://example.com/v1/shape',
+    params: {
+      table: 'todos'
+    }
+  },
+  primaryKey: ['id'],
+  schema: todoSchema // standard schema interface for type safety
+})
+```
+
+Bind live queries to your components:
 
 ```tsx
-import { Collection, createTransaction, useLiveQuery } from '@tanstack/react-optimistic'
-import type { MutationFn, PendingMutation } from '@tanstack/react-optimistic'
+import { useLiveQuery } from '@tanstack/react-optimistic'
 
-// Sync data into collections
-export const todoCollection = new Collection<Todo>({
-  id: 'todos',
-  sync: {
-    // use a sync engine like ElectricSQL or any data
-    // loading strategy including TanStack Query
-  },
-  schema: todoSchema // standard schema interface
-})
-
-// Bind live queries to your components
 const Todos = () => {
-  const { data: todos } = useLiveQuery(q =>
-    q // queries support joins, aggregates, etc.
+  const { data: todos } = useLiveQuery(query =>
+    // You can query across collections with joins, aggregates, etc.
+    query
       .from({ todoCollection })
-      .select('@t.id', '@t.text', '@t.completed')
+      .where('@completed', '=', false)
+      .select('@id', '@text')
       .keyBy('@id')
   )
 
   return <List items={todos} />
 }
+```
 
-// Make writes using transactional mutations
-const tx = createTransaction({ mutationFn: /* ... */ })
+Make writes using transactional mutations:
+
+```ts
+import { createTransaction } from '@tanstack/react-optimistic'
+import type { MutationFn, PendingMutation } from '@tanstack/react-optimistic'
+
+const filterOutCollection = (mutation: PendingMutation) => {
+  const { collection: _, ...rest } = mutation
+
+  return rest
+}
+
+// Transactions are defined with a mutationFn that defines how you want to
+// handle their mutations. Usually by posting them to the server.
+const tx = createTransaction({ mutationFn: async ({ transaction }) => {
+  const payload = transaction.mutations.map(filterOutCollection)
+  const response = await fetch('https://example.com/your-api', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload)
+  })
+
+  if (!response.ok) { // rollback the optimistic state
+    throw new Error(`HTTP Error: ${response.status}`)
+  }
+
+  const result = await response.json()
+
+  // Wait for the transaction to be synced back from the server
+  // before discarding the local optimistic state.
+  await transaction.mutations[0]!.collection.config.sync.awaitTxid(result.txid)
+} })
+
 tx.mutate(() =>
-  // applies local optimistic state and triggers
-  // background sync using your mutationFn
+  // Applies the local optimistic state and triggers your mutationFn
   todoCollection.insert({
     id: uuid(),
     text: '🔥 Make app faster',
