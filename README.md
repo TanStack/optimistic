@@ -28,7 +28,7 @@ Enjoy this library? Try the entire [TanStack](https://tanstack.com), including [
 
 TanStack DB gives you robust support for real-time sync, live queries and local writes. With no stale data, super fast re-rendering and sub-millisecond cross-collection queries — even for large complex apps.
 
-Built on a TypeScript implementation of differential dataflow ([#](https://github.com/electric-sql/d2ts)), TanStack DB provides:
+Built on a TypeScript implementation of differential dataflow ([#](https://github.com/electric-sql/d2ts)), TanStack DB gives you:
 
 - 🔥 **a blazing fast query engine**<br />
   for sub-millisecond live queries &mdash; even for complex queries with joins and aggregates
@@ -91,22 +91,18 @@ tx.mutate(() =>
 
 ### Collections
 
-- typed sets of objects that can mirror a backend table
-- or be populated with a filtered view or result set, such as `pendingTodos` or `decemberNewTodos`
+- typed sets of objects that can mirror a backend table or be populated with a filtered view or result set, such as `pendingTodos` or `decemberNewTodos`
 - collections are just JavaScript data &mdash; load them on demand and define as many as you need
 
 ### Live Queries
 
-- run reactively against and across collections
-- with support for joins, filters and aggregates
+- run reactively against and across collections with support for joins, filters and aggregates
 - powered by differential dataflow: query results update incrementally, not by re-running the whole query
 
 ### Transactions
 
-- batch and stage local changes across collections
-- immediate application of local optimistic updates
-- sync to the backend using flexible mutationFns
-- with automatic rollbacks and management of optimistic state
+- batch and stage local changes across collections with immediate application of local optimistic updates
+- sync to the backend using flexible mutationFns with automatic rollbacks and management of optimistic state
 
 ## 🔧 Install
 
@@ -116,7 +112,9 @@ npm install @tanstack/db
 
 ## 📚 Docs
 
-See the [Documentation](./docs/index.md) for more API reference and usage guides.
+See the [Documentation](./docs/index.md) for usage guides and the API reference.
+
+There's also an example [React todo app](./examples/react/todo).
 
 ## ❓ FAQ
 
@@ -124,7 +122,7 @@ See the [Documentation](./docs/index.md) for more API reference and usage guides
 TanStack DB builds *on top of* TanStack Query. Use Query to fetch data; use DB to manage reactive local collections and mutations. They complement each other.
 
 **Do I need a sync engine like ElectricSQL?**<br />
-No. TanStack DB works with any backend: polling APIs, GraphQL, REST, or custom sync logic.
+No. TanStack DB *is* designed to work with sync engines like [Electric](https://electric-sql.com) but *also* works with any backend: polling APIs, GraphQL, REST, or custom sync logic.
 
 **What is a Collection? Is it like a DB table?**<br />
 Kind of. Collections are typed sets of objects, but they can also be filtered views or custom groupings. They're just JavaScript structures that you define and manage.
